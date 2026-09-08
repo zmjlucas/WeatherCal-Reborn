@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Migrated the complete widget engine, converter and behavior tests to strict TypeScript, preserving persisted widget settings and backgrounds.
+- Replaced the two-file widget installation with self-contained `one.js`, preserving editable layout/custom regions during validated updates. Legacy installations migrate manually.
+- Pinned Node 24.20.0 and pnpm 11.19.0, added esbuild bundles, AST runtime checks, deterministic SHA256SUMS and strict CI checks.
+
 ### Added
 
 - Full upstream Weather-Cal functionality in focused JavaScript modules, preserving all 71 public methods and all 101 existing preferences.

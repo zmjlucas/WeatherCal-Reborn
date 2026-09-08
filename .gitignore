@@ -4,3 +4,6 @@ coverage/
 .superpowers/
 docs/superpowers/
 .DS_Store
+
+# Generated Node test API declarations; production is checked separately.
+.typecheck/
