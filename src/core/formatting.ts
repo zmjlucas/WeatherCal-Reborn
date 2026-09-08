@@ -1,9 +1,12 @@
+import type { ColorFormat, WidgetContainer } from "../types/rendering";
+import type { FontFormat } from "../types/settings";
+import type { WeatherCalContext } from "../types/context";
 // Licensed under MIT. See LICENSE.
 
-module.exports = {
-  displayNumber(number,dummy = "-") { return (number == null ? dummy : Math.round(number).toString()) },
+export default {
+  displayNumber(this: WeatherCalContext, number: number | null | undefined, dummy = "-"): string { return (number == null ? dummy : Math.round(number).toString()) },
 
-  tintIcon(icon,format,force = false) {
+  tintIcon(this: WeatherCalContext, icon: WidgetImage, format?: ColorFormat | null, force = false): void {
       const tintIcons = this.settings.widget.tintIcons
       const never = tintIcons == this.enum.icons.never || !tintIcons
       const notDark = tintIcons == this.enum.icons.dark && !this.darkMode && !this.settings.widget.instantDark
@@ -12,22 +15,22 @@ module.exports = {
       icon.tintColor = this.provideColor(format)
     },
 
-  isNight(dateInput) {
+  isNight(this: WeatherCalContext, dateInput: Date): boolean {
       const timeValue = dateInput.getTime()
-      return (timeValue < this.data.sun.sunrise) || (timeValue > this.data.sun.sunset)
+      return (timeValue < (this.data.sun?.sunrise ?? 0)) || (timeValue > (this.data.sun?.sunset ?? 0))
     },
 
-  dateDiff(first, second) {
+  dateDiff(this: WeatherCalContext, first: Date, second: Date): number {
       const firstDate = new Date(first.getFullYear(), first.getMonth(), first.getDate(), 0, 0, 0)
       const secondDate = new Date(second.getFullYear(), second.getMonth(), second.getDate(), 0, 0, 0)
-      return Math.round((secondDate-firstDate)/(1000*60*60*24))
+      return Math.round((secondDate.getTime()-firstDate.getTime())/(1000*60*60*24))
     },
 
-  formatTime(date) { return this.formatDate(date,null,false,true) },
+  formatTime(this: WeatherCalContext, date: Date): string { return this.formatDate(date,null,false,true) },
 
-  formatDatetime(date) { return this.formatDate(date,null,true,true) },
+  formatDatetime(this: WeatherCalContext, date: Date): string { return this.formatDate(date,null,true,true) },
 
-  formatDate(date,format,showDate = true, showTime = false) {
+  formatDate(this: WeatherCalContext, date: Date, format?: string | null, showDate = true, showTime = false): string {
       const df = new DateFormatter()
       df.locale = this.locale
       if (format) {
@@ -39,14 +42,14 @@ module.exports = {
       return df.string(date)
     },
 
-  provideTextSymbol(shape) {
+  provideTextSymbol(this: WeatherCalContext, shape: string): string {
       if (shape.startsWith("rect")) { return "\u2759" }
       if (shape == "circle") { return "\u2B24" }
       return "\u2759"
     },
 
-  provideFont(fontName, fontSize) {
-      const fontGenerator = {
+  provideFont(this: WeatherCalContext, fontName: string, fontSize: number): Font {
+      const fontGenerator: Record<string, () => Font> = {
         ultralight() { return Font.ultraLightSystemFont(fontSize) },
         light()      { return Font.lightSystemFont(fontSize) },
         regular()    { return Font.regularSystemFont(fontSize) },
@@ -57,10 +60,11 @@ module.exports = {
         black()      { return Font.blackSystemFont(fontSize) },
         italic()     { return Font.italicSystemFont(fontSize) },
       }
-      return fontGenerator[fontName] ? fontGenerator[fontName]() : new Font(fontName, fontSize)
+      const generator = fontGenerator[fontName]
+      return generator ? generator() : new Font(fontName, fontSize)
     },
 
-  provideText(string, stack, format, standardize = false, url) {
+  provideText(this: WeatherCalContext, string: unknown, stack: WidgetContainer, format?: Partial<FontFormat> | null, standardize = false, url?: string): WidgetText {
       let container = stack
       if (standardize) {
         container = this.align(stack)
@@ -68,7 +72,7 @@ module.exports = {
       }
 
       const capsEnum = this.enum.caps
-      function capitalize(text,caps) {
+      function capitalize(text: string, caps: string): string {
         switch (caps) {
           case (capsEnum.upper):
             return text.toUpperCase()
@@ -88,8 +92,8 @@ module.exports = {
       const textItem = container.addText(capitalize(string == null ? "--" : String(string),capFormat))
 
       const textFont = (format && format.font && format.font.length) ? format.font : this.format.defaultText.font
-      const textSize = (format && format.size && parseInt(format.size)) ? format.size : this.format.defaultText.size
-      textItem.font = this.provideFont(textFont, parseInt(textSize))
+      const textSize = (format && format.size && parseInt(String(format.size))) ? format.size : this.format.defaultText.size
+      textItem.font = this.provideFont(textFont, parseInt(String(textSize)))
       textItem.textColor = this.provideColor(format)
     if (url) {
       textItem.url = url
@@ -98,7 +102,7 @@ module.exports = {
       return textItem
     },
 
-  provideColor(format, alpha) {
+  provideColor(this: WeatherCalContext, format?: ColorFormat | null, alpha?: number): Color {
       const defaultText = this.format.defaultText
       const lightColor = (format && format.color && format.color.length) ? format.color : defaultText.color
       const defaultDark = (defaultText.dark && defaultText.dark.length) ? defaultText.dark : defaultText.color

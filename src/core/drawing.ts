@@ -1,7 +1,8 @@
+import type { WeatherCalContext } from "../types/context";
 // Licensed under MIT. See LICENSE.
 
-module.exports = {
-  provideBatteryIcon(batteryLevel,charging = false) {
+export default {
+  provideBatteryIcon(this: WeatherCalContext, batteryLevel: number, charging = false): Image {
       if (charging) { return SFSymbol.named("battery.100.bolt").image }
 
       const batteryWidth = 87
@@ -36,8 +37,8 @@ module.exports = {
       return draw.getImage()
     },
 
-  provideConditionSymbol(cond,night) {
-      const symbols = {
+  provideConditionSymbol(this: WeatherCalContext, cond: number, night: boolean): Image {
+      const symbols: Record<string, () => string> = {
         "1": function() { return "exclamationmark.circle" },
         "2": function() { return "cloud.bolt.rain.fill" },
         "3": function() { return "cloud.drizzle.fill" },
@@ -54,10 +55,10 @@ module.exports = {
           return "cloud.fill"
         },
       }
-      return SFSymbol.named((symbols[Math.floor(cond / 100)] || symbols[1])()).image
+      return SFSymbol.named((symbols[Math.floor(cond / 100)] ?? (() => "exclamationmark.circle"))()).image
     },
 
-  drawVerticalLine(color, height) {
+  drawVerticalLine(this: WeatherCalContext, color: Color, height: number): Image {
 
       const width = 2
 
@@ -76,13 +77,16 @@ module.exports = {
       return draw.getImage()
     },
 
-  provideTempBar() {
+  provideTempBar(this: WeatherCalContext): Image {
 
       const tempBarWidth = 200
       const tempBarHeight = 20
       const weatherData = this.data.weather
+      const current = weatherData?.currentTemp ?? 0
+      const low = weatherData?.todayLow ?? 0
+      const high = weatherData?.todayHigh ?? 0
 
-      let percent = (weatherData.currentTemp - weatherData.todayLow) / (weatherData.todayHigh - weatherData.todayLow)
+      let percent = (current - low) / (high - low)
       if (!Number.isFinite(percent)) { percent = 0.5 }
       if (percent < 0) { percent = 0 }
       else if (percent > 1) { percent = 1 }

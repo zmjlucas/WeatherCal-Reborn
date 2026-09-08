@@ -1,7 +1,9 @@
+import type { GradientSettings } from "../types/rendering";
+import type { WeatherCalContext } from "../types/context";
 // Licensed under MIT. See LICENSE.
 
-module.exports = {
-  async setupGradient() {
+export default {
+  async setupGradient(this: WeatherCalContext): Promise<GradientSettings> {
       if (!this.data.sun) { await this.setupSunrise() }
 
       if (this.isNight(this.now)) {
