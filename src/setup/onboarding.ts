@@ -1,7 +1,9 @@
 // Licensed under MIT. See LICENSE.
 
-module.exports = {
-  async initialSetup(imported = false) {
+import type { WeatherCalContext } from '../types/context';
+
+export default {
+  async initialSetup(this: WeatherCalContext, imported = false): Promise<string | undefined> {
       let message, options
       if (!imported) {
         message = "Welcome to Weather Cal. Make sure your script has the name you want before you begin."
@@ -12,7 +14,7 @@ module.exports = {
       message = (imported ? "Welcome to Weather Cal. We" : "Next, we") + " need to check if you've given permissions to the Scriptable app. This might take a few seconds."
       await this.generateAlert(message,["Check permissions"])
 
-      let errors = []
+      let errors: string[] = []
       try { if (!(await this.setupLocation())) errors.push("location") } catch { errors.push("location") }
       try { await CalendarEvent.today() } catch { errors.push("calendar") }
       try { await Reminder.all() } catch { errors.push("reminders") }
@@ -57,7 +59,7 @@ module.exports = {
       return this.previewValue()
     },
 
-  async getWeatherKey(firstRun = false) {
+  async getWeatherKey(this: WeatherCalContext, firstRun = false): Promise<boolean> {
       const returnVal = await this.promptForText("Paste your API key in the box below.",[""],["82c29fdbgd6aebbb595d402f8a65fabf"])
       const apiKey = returnVal.textFieldValue(0).trim()
       if (!apiKey) { await this.generateAlert("No API key was entered. Try copying the key again and re-running this script.",["Exit"]); return false }
@@ -65,7 +67,7 @@ module.exports = {
 
       let apiResponse
       try { apiResponse = await this.getWeatherApiPath(apiKey) } catch {}
-      if (apiResponse && apiResponse.current) {
+      if (apiResponse && typeof apiResponse !== 'string' && apiResponse.current) {
         await this.generateAlert("The API key worked and was saved.",[firstRun ? "Continue" : "OK"])
       } else if (firstRun) {
         await this.generateAlert("New OpenWeather API keys may take a few hours to activate. Your widget will start displaying weather information once it's active.",["Continue"])

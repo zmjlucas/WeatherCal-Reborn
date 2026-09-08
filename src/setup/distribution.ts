@@ -1,17 +1,31 @@
 // Licensed under MIT. See LICENSE.
 
-module.exports = {
-  async downloadCode(filename, url) {
+import type { WeatherCalContext } from '../types/context';
+import { parseBackground } from '../types/background';
+import { mergeScriptUpdate, splitScript } from './script-format';
+
+export default {
+  async downloadCode(this: WeatherCalContext, filename: string, url: string, reset = false): Promise<boolean> {
+    // A widget may only replace its own installed script.
+    if (filename !== this.name) return false;
     try {
-      const source = await new Request(url).loadString();
-      if (typeof source !== 'string' || !source.startsWith('// Variables used by Scriptable.')) return false;
-      this.fm.writeString(this.fm.joinPath(this.fm.documentsDirectory(), filename + '.js'), source);
+      const downloaded = await new Request(url).loadString();
+      splitScript(downloaded);
+      const path = this.fm.joinPath(this.fm.documentsDirectory(), this.name + '.js');
+      let replacement = downloaded;
+      if (!reset) {
+        if (!this.fm.fileExists(path)) return false;
+        if (this.fm.isFileStoredIniCloud(path)) await this.fm.downloadFileFromiCloud(path);
+        replacement = mergeScriptUpdate(this.fm.readString(path), downloaded);
+      }
+      // All download, structure and syntax checks finish before the first write.
+      this.fm.writeString(path, replacement);
       return true;
     } catch { return false; }
   },
 
   /** Export the complete launcher, keeping custom functions and literal layout text intact. */
-  async exportWidget() {
+  async exportWidget(this: WeatherCalContext): Promise<string> {
     const scriptPath = this.fm.joinPath(this.fm.documentsDirectory(), this.name + '.js');
     for (const path of [scriptPath, this.bgPath, this.prefPath]) {
       if (this.fm.fileExists(path) && this.fm.isFileStoredIniCloud(path)) await this.fm.downloadFileFromiCloud(path);
@@ -20,9 +34,9 @@ module.exports = {
       source: this.fm.readString(scriptPath),
       preferences: await this.getSettings(),
       background: this.fm.fileExists(this.bgPath)
-        ? JSON.parse(this.fm.readString(this.bgPath))
-        : { type: 'color', color: '16296b' },
-      images: []
+        ? parseBackground(JSON.parse(this.fm.readString(this.bgPath)))
+        : parseBackground(undefined),
+      images: [] as { suffix: string; data: string }[]
     };
     if (payload.background.type === 'image') {
       const directory = this.fm.joinPath(this.fm.documentsDirectory(), 'Weather Cal');
@@ -61,8 +75,7 @@ async function importWidget() {
   complete.addAction('OK');
   await complete.present();
 }
-await importWidget();
-Script.complete();
+try { await importWidget(); } finally { Script.complete(); }
 `;
   }
 };

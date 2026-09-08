@@ -1,7 +1,9 @@
 // Licensed under MIT. See LICENSE.
 
-module.exports = {
-  async runSetup(name, iCloudInUse, codeFilename, gitHubUrl) {
+import type { WeatherCalContext } from '../types/context';
+
+export default {
+  async runSetup(this: WeatherCalContext, name: string, iCloudInUse: boolean, codeFilename?: string, gitHubUrl?: string): Promise<string | undefined> {
     this.initialize(name, iCloudInUse);
     for (const path of [this.bgPath, this.prefPath]) {
       if (this.fm.fileExists(path) && this.fm.isFileStoredIniCloud(path)) await this.fm.downloadFileFromiCloud(path);
@@ -14,15 +16,15 @@ module.exports = {
     return this.setWidgetBackground();
   },
 
-  async editSettings(codeFilename, gitHubUrl) {
+  async editSettings(this: WeatherCalContext, _codeFilename?: string, gitHubUrl?: string): Promise<string | undefined> {
     const options = ['Show widget preview', 'Change background', 'Edit preferences', 'Update code', 'Export widget', 'Other settings', 'Exit settings menu'];
     const selected = await this.generateAlert('Widget Setup', options);
     if (selected === 0) return this.previewValue();
     if (selected === 1) return this.setWidgetBackground();
-    if (selected === 2) return this.editPreferences();
+    if (selected === 2) { await this.editPreferences(); return; }
     if (selected === 3) {
-      if (await this.generateAlert('Would you like to update the Weather Cal code? Your widgets will not be affected.', ['Update', 'Exit']) !== 0) return;
-      const success = await this.downloadCode(codeFilename, gitHubUrl);
+      if (await this.generateAlert('Would you like to update the Weather Cal code? Your layout, custom code and settings will be preserved.', ['Update', 'Exit']) !== 0) return;
+      const success = await this.downloadCode(this.name, gitHubUrl ?? this.widgetUrl);
       await this.generateAlert(success ? 'The update is now complete.' : 'The update failed. Please try again later.');
       return;
     }
@@ -47,7 +49,7 @@ module.exports = {
     confirmation.addAction('Cancel');
     if (await confirmation.present() !== 0) return;
     // Fetch a valid replacement before removing any current configuration.
-    const success = await this.downloadCode(this.name, this.widgetUrl);
+    const success = await this.downloadCode(this.name, this.widgetUrl, true);
     if (success) {
       const images = this.fm.joinPath(this.fm.documentsDirectory(), 'Weather Cal');
       for (const path of [this.bgPath, this.prefPath,
