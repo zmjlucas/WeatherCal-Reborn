@@ -1,7 +1,12 @@
 // Licensed under MIT. See LICENSE.
 
-module.exports = {
-  async setupCovid() {
+import type { WeatherCalContext } from '../types/context';
+import { parseCovid, parseNews } from '../types/data';
+import type { NewsListing } from '../types/data';
+import { record } from '../types/json';
+
+export default {
+  async setupCovid(this: WeatherCalContext): Promise<void> {
     const country = (this.settings.covid.country || 'World').trim();
     // disease.sh retains the original Worldometer-style fields. Its source data
     // is historical; a successful request does not mean case counts are current.
@@ -10,25 +15,26 @@ module.exports = {
     const identity = JSON.stringify([endpoint, country]);
     const path = this.getDataCachePath('covid', identity);
     const cache = this.getCache(path, 15, 1440);
-    let response = cache?.identity === identity ? cache.response : null;
-    if (!response || cache.cacheExpired) {
+    let response = cache?.identity === identity ? parseCovid(cache.response) : null;
+    if (!response || cache?.cacheExpired) {
       try {
-        const fresh = await new Request(endpoint).loadJSON();
-        if (fresh && !Array.isArray(fresh) && Number.isFinite(fresh.cases)) {
-          response = { ...fresh, totalTests: fresh.totalTests ?? fresh.tests };
-          this.fm.writeString(path, JSON.stringify({ identity, response }));
+        const raw: unknown = await new Request(endpoint).loadJSON();
+        const fresh = parseCovid(raw);
+        if (fresh) {
+          response = fresh;
+          this.fm.writeString(path, JSON.stringify({ identity, response: { ...record(raw), totalTests: fresh.totalTests } }));
         }
       } catch { /* Keep a recent successful response when the provider is unavailable. */ }
     }
     this.data.covid = response || {};
   },
 
-  async setupNews() {
+  async setupNews(this: WeatherCalContext): Promise<void> {
     const identity = this.settings.news.url;
     const path = this.getDataCachePath('news', identity);
     const cache = this.getCache(path, 1, 1440);
-    let listings = cache?.identity === identity && Array.isArray(cache.listings) ? cache.listings : null;
-    if (!listings || cache.cacheExpired) {
+    let listings = cache?.identity === identity ? parseNews(cache.listings) : null;
+    if (!listings || cache?.cacheExpired) {
       try {
         const raw = await new Request(identity).loadString();
         const root = raw.match(/<((?:[\w.-]+:)?(?:rss|feed|RDF))\b/i);
@@ -38,7 +44,7 @@ module.exports = {
         const entries = getTags(raw, tag);
         const starts = raw.match(new RegExp('<(?:[\\w.-]+:)?' + tag + '\\b', 'gi')) || [];
         if (starts.length !== entries.length) throw Error('Incomplete feed entry');
-        const fresh = [];
+        const fresh: NewsListing[] = [];
         for (const entry of entries) {
           const titleAttributes = entry.match(/<(?:[\w.-]+:)?title\b([^>]*)>/i)?.[1] || '';
           const htmlTitle = /\btype\s*=\s*(["'])(?:html|xhtml)\1/i.test(titleAttributes);
@@ -48,8 +54,10 @@ module.exports = {
           if (isAtom) {
             const links = [...entry.matchAll(/<(?:[\w.-]+:)?link\b([^>]*?)\/?\s*>/gi)];
             for (const candidate of links) {
-              const attributes = {};
-              for (const [, key, , value] of candidate[1].matchAll(/([\w:-]+)\s*=\s*(["'])(.*?)\2/gs)) attributes[key.toLowerCase()] = value;
+              const attributes: Record<string, string> = {};
+              for (const [, key, , value] of (candidate[1] || '').matchAll(/([\w:-]+)\s*=\s*(["'])(.*?)\2/gs)) {
+                if (key !== undefined && value !== undefined) attributes[key.toLowerCase()] = value;
+              }
               if (attributes.href && (!attributes.rel || attributes.rel === 'alternate')) { link = attributes.href; break; }
             }
           }
@@ -62,21 +70,23 @@ module.exports = {
         this.fm.writeString(path, JSON.stringify({ identity, listings }));
       } catch { /* Keep recent headlines when the feed is offline or malformed. */ }
     }
-    const count = parseInt(this.settings.news.numberOfItems);
+    const count = parseInt(String(this.settings.news.numberOfItems));
     this.data.news = (listings || []).slice(0, Number.isFinite(count) ? Math.max(0, count) : 5);
 
-    function getTags(value, tag) {
+
+    function getTags(value: string, tag: string): string[] {
       const expression = new RegExp('<(?:[\\w.-]+:)?' + tag + '\\b[^>]*>([\\s\\S]*?)<\\/(?:[\\w.-]+:)?' + tag + '\\s*>', 'gi');
-      return [...value.matchAll(expression)].map(match => match[1]);
+      return [...value.matchAll(expression)].map(match => match[1] || '');
     }
 
-    function scrubString(value, html = false) {
-      const entities = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+    function scrubString(value: string, html = false): string {
+      const entities: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
       const decoded = value.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
         .replace(/<\/?[a-z][^>]*>/gi, '')
-        .replace(/&#(x[\da-f]+|\d+);|&(amp|lt|gt|quot|apos|nbsp);/gi, (match, numeric, named) => {
-          if (named) return entities[named.toLowerCase()];
-          const code = numeric[0].toLowerCase() === 'x' ? parseInt(numeric.slice(1), 16) : Number(numeric);
+        .replace(/&#(x[\da-f]+|\d+);|&(amp|lt|gt|quot|apos|nbsp);/gi, (match: string, numeric: string | undefined, named: string | undefined): string => {
+          if (named) return entities[named.toLowerCase()] ?? match;
+          if (!numeric) return match;
+          const code = numeric.charAt(0).toLowerCase() === 'x' ? parseInt(numeric.slice(1), 16) : Number(numeric);
           return code <= 0x10ffff ? String.fromCodePoint(code) : match;
         });
       // Entity-escaped brackets are literal in text titles, but markup in Atom HTML titles.

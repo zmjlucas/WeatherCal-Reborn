@@ -1,10 +1,13 @@
 // Licensed under MIT. See LICENSE.
 
-module.exports = {
-  async setupEvents() {
+import type { WeatherCalContext } from '../types/context';
+import type { CalendarReference } from '../types/settings';
+
+export default {
+  async setupEvents(this: WeatherCalContext): Promise<void> {
       const eventSettings = this.settings.events
       let calSetting = eventSettings.selectCalendars
-      let calendars
+      let calendars: (string | CalendarReference)[]
 
       // Old, manually-entered comma lists.
       if (typeof calSetting == "string") {
@@ -15,11 +18,11 @@ module.exports = {
         calendars = calSetting || []
       }
 
-      let numberOfDays = parseInt(eventSettings.numberOfDays)
+      let numberOfDays = parseInt(String(eventSettings.numberOfDays))
       numberOfDays = isNaN(numberOfDays) ? 1 : Math.max(0, numberOfDays)
 
       // Complex due to support for old boolean values.
-      let showFutureAt = parseInt(eventSettings.showTomorrow)
+      let showFutureAt = parseInt(String(eventSettings.showTomorrow))
       showFutureAt = isNaN(showFutureAt) ? (eventSettings.showTomorrow ? 0 : 24) : showFutureAt
 
       const endDate = new Date(this.now)
@@ -36,21 +39,21 @@ module.exports = {
         if (diff < 0 || diff > numberOfDays) { return false }
         if (diff > 0 && this.now.getHours() < showFutureAt) { return false }
 
-        if (calendars.length && !(calendars.some(a => a.identifier == event.calendar.identifier) || calendars.includes(event.calendar.title))) { return false }
+        if (calendars.length && !(calendars.some(a => typeof a !== "string" && a.identifier == event.calendar.identifier) || calendars.includes(event.calendar.title))) { return false }
         if (event.title.startsWith("Canceled:")) { return false }
         if (event.isAllDay) { return eventSettings.showAllDay }
 
         // If they leave it blank, set minutes after to the duration of the event
-        const minutesAfter = parseInt(eventSettings.minutesAfter) >= 0 ? parseInt(eventSettings.minutesAfter) * 60000 : event.endDate - event.startDate
+        const minutesAfter = parseInt(String(eventSettings.minutesAfter)) >= 0 ? parseInt(String(eventSettings.minutesAfter)) * 60000 : event.endDate.getTime() - event.startDate.getTime()
         return (event.startDate.getTime() + minutesAfter > this.now.getTime())
 
-      }).slice(0,parseInt(eventSettings.numberOfEvents))
+      }).slice(0,parseInt(String(eventSettings.numberOfEvents)))
     },
 
-  async setupReminders() {
+  async setupReminders(this: WeatherCalContext): Promise<void> {
       const reminderSettings = this.settings.reminders
       let listSetting = reminderSettings.selectLists
-      let lists
+      let lists: (string | CalendarReference)[]
 
       // Old, manually-entered comma lists.
       if (typeof listSetting == "string") {
@@ -68,7 +71,7 @@ module.exports = {
         // Non-null due dates are prioritized.
         if (!a.dueDate && b.dueDate) return 1
         if (a.dueDate && !b.dueDate) return -1
-        if (!a.dueDate && !b.dueDate) return 0
+        if (!a.dueDate || !b.dueDate) return 0
 
         // Otherwise, earlier due dates go first.
         const aTime = a.dueDate.getTime()
@@ -80,11 +83,11 @@ module.exports = {
       })
 
       this.data.reminders = reminders.filter((reminder) => {
-        if (lists.length && !(lists.some(a => a.identifier == reminder.calendar.identifier) || lists.includes(reminder.calendar.title))) { return false }
+        if (lists.length && !(lists.some(a => typeof a !== "string" && a.identifier == reminder.calendar.identifier) || lists.includes(reminder.calendar.title))) { return false }
         if (!reminder.dueDate)  { return reminderSettings.showWithoutDueDate }
         if (reminder.isOverdue) { return reminderSettings.showOverdue }
         if (reminderSettings.todayOnly) { return this.dateDiff(reminder.dueDate, this.now) == 0 }
         return true
-      }).slice(0,parseInt(reminderSettings.numberOfReminders))
+      }).slice(0,parseInt(String(reminderSettings.numberOfReminders)))
     }
 };

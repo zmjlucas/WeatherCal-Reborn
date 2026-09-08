@@ -1,8 +1,13 @@
 // Licensed under MIT. See LICENSE.
 
-module.exports = {
+import type { WeatherCalContext } from '../types/context';
+import { parseWeatherResponse } from '../types/data';
+import type { WeatherResponse } from '../types/data';
+import { finiteNumber } from '../types/json';
+
+export default {
   // Sun and weather use the same scoped response, with their original cache ages.
-  async loadWeatherData(minAge, maxAge) {
+  async loadWeatherData(this: WeatherCalContext, minAge: number, maxAge: number): Promise<{ locale: string; response: WeatherResponse | null }> {
     if (!this.data.location) await this.setupLocation();
     const safeLocales = this.getOpenWeatherLocaleCodes();
     const forced = this.settings.weather.locale || '';
@@ -11,44 +16,45 @@ module.exports = {
       const candidates = [this.locale || '', Device.locale() || '']
         .flatMap(value => {
           const normalized = value.toLowerCase().replace(/-/g, '_');
-          return [normalized, normalized.split('_')[0]];
+          return [normalized, normalized.split('_')[0] || normalized];
         });
       locale = candidates.find(value => safeLocales.includes(value)) || 'en';
     }
-    const { latitude, longitude } = this.data.location;
+    const { latitude, longitude } = this.data.location || {};
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return { locale, response: null };
     const units = this.settings.widget.units;
     const identity = JSON.stringify([latitude, longitude, units, locale]);
     const path = this.getDataCachePath('cache', identity);
     const cache = this.getCache(path, minAge, maxAge);
-    let response = cache?.identity === identity ? cache.response : null;
-    if (!response || cache.cacheExpired) {
+    let response = cache?.identity === identity ? parseWeatherResponse(cache.response) : null;
+    if (!response || cache?.cacheExpired) {
       try {
         const apiPath = await this.getWeatherApiPath();
         const url = apiPath + '&lat=' + latitude + '&lon=' + longitude +
           '&exclude=minutely,alerts&units=' + encodeURIComponent(units) + '&lang=' + encodeURIComponent(locale);
-        const fresh = await new Request(url).loadJSON();
+        const raw: unknown = await new Request(url).loadJSON();
+        const fresh = parseWeatherResponse(raw);
         // Do not replace usable data with an API error or malformed payload.
         if (fresh && !fresh.cod && (fresh.current || Array.isArray(fresh.daily) || Array.isArray(fresh.hourly))) {
           response = fresh;
-          this.fm.writeString(path, JSON.stringify({ identity, response }));
+          this.fm.writeString(path, JSON.stringify({ identity, response: raw }));
         }
       } catch { /* An unexpired fallback remains usable while offline. */ }
     }
     return { locale, response };
   },
 
-  async setupSunrise() {
+  async setupSunrise(this: WeatherCalContext): Promise<void> {
     const { response } = await this.loadWeatherData(60, 1440);
     const daily = response?.daily || [];
     this.data.sun = {
-      sunrise: Number.isFinite(daily[0]?.sunrise) ? daily[0].sunrise * 1000 : null,
-      sunset: Number.isFinite(daily[0]?.sunset) ? daily[0].sunset * 1000 : null,
-      tomorrow: Number.isFinite(daily[1]?.sunrise) ? daily[1].sunrise * 1000 : null
+      sunrise: finiteNumber(daily[0]?.sunrise) ? daily[0].sunrise * 1000 : null,
+      sunset: finiteNumber(daily[0]?.sunset) ? daily[0].sunset * 1000 : null,
+      tomorrow: finiteNumber(daily[1]?.sunrise) ? daily[1].sunrise * 1000 : null
     };
   },
 
-  async setupWeather() {
+  async setupWeather(this: WeatherCalContext): Promise<void> {
     const { locale, response } = await this.loadWeatherData(1, 60);
     const current = response?.current;
     const daily = response?.daily || [];
@@ -62,8 +68,8 @@ module.exports = {
       todayHigh: daily[0]?.temp?.max ?? null,
       todayLow: daily[0]?.temp?.min ?? null,
       forecast: [], hourly: [],
-      tomorrowRain: Number.isFinite(daily[1]?.pop) ? daily[1].pop * 100 : null,
-      nextHourRain: Number.isFinite(hourly[1]?.pop) ? hourly[1].pop * 100 : null
+      tomorrowRain: finiteNumber(daily[1]?.pop) ? daily[1].pop * 100 : null,
+      nextHourRain: finiteNumber(hourly[1]?.pop) ? hourly[1].pop * 100 : null
     };
     for (let index = 0; index <= 7; index++) {
       this.data.weather.forecast.push({
@@ -78,7 +84,12 @@ module.exports = {
     }
   },
 
-  async getWeatherApiPath(newApiKey) {
+  getWeatherApiPath
+};
+
+function getWeatherApiPath(this: WeatherCalContext): Promise<string>;
+function getWeatherApiPath(this: WeatherCalContext, newApiKey: string): Promise<string | WeatherResponse | null>;
+async function getWeatherApiPath(this: WeatherCalContext, newApiKey?: string): Promise<string | WeatherResponse | null> {
     const keyPath = this.fm.joinPath(this.fm.libraryDirectory(), 'weather-cal-api-key');
     const preference = this.fm.joinPath(this.fm.libraryDirectory(), 'weather-cal-api-path');
     if (!newApiKey) {
@@ -91,15 +102,14 @@ module.exports = {
     if (!newApiKey && this.fm.fileExists(preference)) return this.fm.readString(preference).replace(/"/g, '').trim() + parameter;
 
     let apiPath = 'https://api.openweathermap.org/data/3.0/onecall';
-    let response;
+    let response: WeatherResponse | null = null;
     // Existing users can still validate legacy subscriptions through 2.5.
     for (const path of [apiPath, 'https://api.openweathermap.org/data/2.5/onecall']) {
       apiPath = path;
-      try { response = await new Request(path + parameter + '&lat=37.332280&lon=-122.010980').loadJSON(); }
-      catch { response = undefined; }
+      try { response = parseWeatherResponse(await new Request(path + parameter + '&lat=37.332280&lon=-122.010980').loadJSON()); }
+      catch { response = null; }
       if (!response?.cod) break;
     }
     if (response && !response.cod) this.writePreference('weather-cal-api-path', apiPath);
     return newApiKey ? response : apiPath + parameter;
-  }
-};
+}
