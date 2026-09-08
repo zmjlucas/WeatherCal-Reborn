@@ -1,6 +1,9 @@
 // Licensed under MIT. See LICENSE.
 
-module.exports = async function(getFromCalendar) {
+import type { WeatherCalContext } from '../../types/context';
+import type { EditingCategory, GetCalendars, DateSettings } from '../../types/settings';
+
+export default async function(this: WeatherCalContext, getFromCalendar: GetCalendars): Promise<{ date: EditingCategory<DateSettings> }> {
   return {
       date: {
         name: "Date",
