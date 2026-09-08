@@ -1,9 +1,11 @@
+import type { WeatherCalContext } from "../types/context";
 // Licensed under MIT. See LICENSE.
 // Feed items render normalized news and COVID data with localized formatting.
 
-module.exports = {
-  async covid(column) {
-    if (!this.data.covid) { await this.setupCovid() }
+export default {
+  async covid(this: WeatherCalContext, column: WidgetStack): Promise<void> {
+    if (!this.data.covid) await this.setupCovid()
+    const data = this.data.covid ?? {}
 
     const covidStack = this.align(column)
     covidStack.setPadding(this.padding/2, this.padding, this.padding/2, this.padding)
@@ -19,17 +21,18 @@ module.exports = {
 
     covidStack.addSpacer(this.padding)
 
-    this.provideText(this.localization.covid.replace(/{(.*?)}/g, (match, $1) => {
-      const val = this.data.covid[$1]
+    this.provideText(this.localization.covid.replace(/{(.*?)}/g, (_match: string, $1: string) => {
+      const val = data[$1]
       return val == null ? "" : new Intl.NumberFormat(this.locale.replace('_','-')).format(val)
     }), covidStack, this.format.covid)
   },
 
-  async news(column) {
-    if (!this.data.news) { await this.setupNews() }
+  async news(this: WeatherCalContext, column: WidgetStack): Promise<void> {
+    if (!this.data.news) await this.setupNews()
+    const news = this.data.news ?? []
     const newsSettings = this.settings.news
 
-    for (const newsItem of this.data.news) {
+    for (const newsItem of news) {
       const newsStack = column.addStack()
       newsStack.setPadding(this.padding, this.padding, this.padding, this.padding)
       newsStack.spacing = this.padding/5
@@ -42,8 +45,9 @@ module.exports = {
 
       if (!newsSettings.showDate || newsSettings.showDate == "noDate") { continue }
 
+      if (newsItem.date == null) continue
       const dateValue = new Date(newsItem.date)
-      if (newsItem.date == null || !Number.isFinite(dateValue.getTime())) { continue }
+      if (!Number.isFinite(dateValue.getTime())) { continue }
       let dateText
       switch (newsSettings.showDate) {
         case "relative":

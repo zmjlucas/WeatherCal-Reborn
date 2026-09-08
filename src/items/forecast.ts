@@ -1,11 +1,14 @@
+import type { WeatherCalContext } from "../types/context";
 // Licensed under MIT. See LICENSE.
 // Daily and hourly forecasts share layout rules while bounding reads to available data.
 
-module.exports = {
-  async forecast(column, hourly = false) {
-    if (!this.data.weather) { await this.setupWeather() }
+export default {
+  async forecast(this: WeatherCalContext, column: WidgetStack, hourly = false): Promise<void> {
+    if (!this.data.weather) await this.setupWeather()
+    const weatherData = this.data.weather
+    if (!weatherData) throw new Error("Weather setup did not provide weather data.")
     if (!this.data.sun) { await this.setupSunrise() }
-    const [locationData, weatherData, sunData, weatherSettings] = [this.data.location, this.data.weather, this.data.sun, this.settings.weather]
+    const weatherSettings = this.settings.weather
 
     // Set up the container stack and overall spacing.
     const weatherStack = this.align(column)
@@ -14,7 +17,7 @@ module.exports = {
     if (settingUrl.trim() != "none") { weatherStack.url = settingUrl || defaultUrl }
 
     const horizontal = hourly ? weatherSettings.horizontalHours : weatherSettings.horizontalForecast
-    const spacing = (weatherSettings.spacing ? parseInt(weatherSettings.spacing) : 0) + (horizontal ? 0 : 5)
+    const spacing = (weatherSettings.spacing ? parseInt(String(weatherSettings.spacing)) : 0) + (horizontal ? 0 : 5)
     const outsidePadding = this.padding > spacing ? this.padding - spacing : 0
 
     if (horizontal) {
@@ -26,7 +29,7 @@ module.exports = {
     }
 
     const startIndex = hourly ? 0 : (weatherSettings.showToday ? 1 : 2)
-    const count = hourly ? parseInt(weatherSettings.showHours) : parseInt(weatherSettings.showDays)
+    const count = hourly ? parseInt(String(weatherSettings.showHours)) : parseInt(String(weatherSettings.showDays))
     // Daily indices are one-based; hourly indices are zero-based.
     const dataEnd = hourly ? weatherData.hourly.length : weatherData.forecast.length + 1
     const endIndex = Math.min(startIndex + Math.max(0, count || 0), dataEnd)
@@ -37,7 +40,7 @@ module.exports = {
 
     // Loop through each individual unit.
     const edgePadding = this.padding > spacing ? spacing : this.padding
-    const smallFontSize = (this.format.smallTemp && this.format.smallTemp.size) ? this.format.smallTemp.size : this.format.defaultText.size
+    const smallFontSize = Number(this.format.smallTemp?.size || this.format.defaultText.size)
     const stackSize = hourly ? new Size(smallFontSize*3,0) : new Size(smallFontSize*2.64,0)
 
     for (let i=startIndex; i < endIndex; i++) {
@@ -80,7 +83,9 @@ module.exports = {
 
       // Set up the container for the condition.
       if (hourly) {
-        const subCondition = conditionStack.addImage(this.provideConditionSymbol(weatherData.hourly[i].Condition, this.isNight(myDate)))
+        const hour = weatherData.hourly[i]
+        if (!hour) continue
+        const subCondition = conditionStack.addImage(this.provideConditionSymbol(hour.Condition, this.isNight(myDate)))
         subCondition.imageSize = new Size(18,18)
         this.tintIcon(subCondition, this.format.smallTemp)
 
@@ -92,19 +97,20 @@ module.exports = {
         tempStack.layoutHorizontally()
 
         if (horizontal) { tempStack.addSpacer() }
-        const temp = this.provideText(this.displayNumber(weatherData.hourly[i].Temp,"--") + "°", tempStack, this.format.smallTemp)
+        const temp = this.provideText(this.displayNumber(hour.Temp,"--") + "°", tempStack, this.format.smallTemp)
         temp.lineLimit = 1
         temp.minimumScaleFactor = 0.75
         if (horizontal) {
-          temp.size = stackSize
           tempStack.addSpacer()
         }
 
       } else {
-        const tinyFontSize = (this.format.tinyTemp && this.format.tinyTemp.size) ? this.format.tinyTemp.size : this.format.defaultText.size
+        const day = weatherData.forecast[i - 1]
+        if (!day) continue
+        const tinyFontSize = Number(this.format.tinyTemp?.size || this.format.defaultText.size)
         conditionStack.size = new Size(0,tinyFontSize*2.64)
 
-        const conditionIcon = conditionStack.addImage(this.provideConditionSymbol(weatherData.forecast[i - 1].Condition, false))
+        const conditionIcon = conditionStack.addImage(this.provideConditionSymbol(day.Condition, false))
         conditionIcon.imageSize = new Size(18,18)
         this.tintIcon(conditionIcon, this.format.smallTemp)
         conditionStack.addSpacer(5)
@@ -118,11 +124,11 @@ module.exports = {
         tempStack.layoutVertically()
         tempStack.size = hourly ? new Size(smallFontSize*1,0) : new Size(smallFontSize*1,0)
 
-        const tempHigh = this.provideText(this.displayNumber(weatherData.forecast[i - 1].High,"-"), tempStack, this.format.tinyTemp)
+        const tempHigh = this.provideText(this.displayNumber(day.High,"-"), tempStack, this.format.tinyTemp)
         tempHigh.lineLimit = 1
         tempHigh.minimumScaleFactor = 0.6
         tempStack.addSpacer(4)
-        const tempLow = this.provideText(this.displayNumber(weatherData.forecast[i - 1].Low,"-"), tempStack, this.format.tinyTemp)
+        const tempLow = this.provideText(this.displayNumber(day.Low,"-"), tempStack, this.format.tinyTemp)
         tempLow.lineLimit = 1
         tempLow.minimumScaleFactor = 0.6
 
@@ -132,7 +138,7 @@ module.exports = {
     }
   },
 
-  async daily(column) { await this.forecast(column) },
+  async daily(this: WeatherCalContext, column: WidgetStack): Promise<void> { await this.forecast(column) },
 
-  async hourly(column) { await this.forecast(column, true) }
+  async hourly(this: WeatherCalContext, column: WidgetStack): Promise<void> { await this.forecast(column, true) }
 };

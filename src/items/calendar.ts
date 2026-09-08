@@ -1,8 +1,9 @@
+import type { WeatherCalContext } from "../types/context";
 // Licensed under MIT. See LICENSE.
 // Calendar items consume normalized events and reminders from the data modules.
 
-module.exports = {
-  async date(column) {
+export default {
+  async date(this: WeatherCalContext, column: WidgetStack): Promise<void> {
     const dateSettings = this.settings.date
     if (!this.data.events && dateSettings.dynamicDateSize) { await this.setupEvents() }
 
@@ -11,7 +12,7 @@ module.exports = {
     const settingUrl = dateSettings.url || ""
     const url = settingUrl.trim() == "none" ? undefined : settingUrl || defaultUrl
 
-    if (dateSettings.dynamicDateSize ? this.data.events.length : dateSettings.staticDateSize == "small") {
+    if (dateSettings.dynamicDateSize ? (this.data.events?.length ?? 0) : dateSettings.staticDateSize == "small") {
       this.provideText(this.formatDate(this.now,dateSettings.smallDateFormat), column, this.format.smallDate, true, url)
 
     } else {
@@ -25,42 +26,45 @@ module.exports = {
     }
   },
 
-  async events(column) {
-    if (!this.data.events) { await this.setupEvents() }
+  async events(this: WeatherCalContext, column: WidgetStack): Promise<void | WidgetText> {
+    if (!this.data.events) await this.setupEvents()
+    const events = this.data.events ?? []
     const eventSettings = this.settings.events
 
     const settingUrlExists = (eventSettings.url || "").length > 0
-    if (this.data.events.length == 0) {
+    if (events.length == 0) {
       const secondsForToday = Math.floor(new Date().getTime() / 1000) - 978307200
       if (eventSettings.noEventBehavior == "message" && this.localization.noEventMessage.length) { return this.provideText(this.localization.noEventMessage, column, this.format.noEvents, true, settingUrlExists ? eventSettings.url : "calshow:" + secondsForToday) }
-      if (this[eventSettings.noEventBehavior]) { return await this[eventSettings.noEventBehavior](column) }
+      const customItem = this.custom?.[eventSettings.noEventBehavior]
+      if (typeof customItem === "function" && this.custom) { await customItem.call(this.custom, column); return }
+      const fallback: unknown = Reflect.get(this, eventSettings.noEventBehavior)
+      if (typeof fallback === "function") { await fallback.call(this, column); return }
     }
 
-    let currentStack
+    let currentStack: WidgetStack
     let currentDiff = 0
-    const numberOfEvents = this.data.events.length
+    const numberOfEvents = events.length
     const showCalendarColor = eventSettings.showCalendarColor
     const colorShape = showCalendarColor.includes("circle") ? "circle" : "rectangle"
 
     // Creates an event stack on the widget for a specific date diff.
-    function makeEventStack(diff, currentDate) {
+    function makeEventStack(diff: number, currentDate: Date): WidgetStack {
       const eventStack = column.addStack()
       eventStack.layoutVertically()
       eventStack.setPadding(0, 0, 0, 0)
       const secondsForDay = Math.floor(currentDate.getTime() / 1000) - 978307200 + (diff * 86400)
       eventStack.url = settingUrlExists ? eventSettings.url : "calshow:" + secondsForDay
-      currentStack = eventStack
+      return eventStack
     }
 
-    makeEventStack(currentDiff,this.now)
+    currentStack = makeEventStack(currentDiff,this.now)
 
-    for (let i = 0; i < numberOfEvents; i++) {
-      const event = this.data.events[i]
+    for (const event of events) {
       const diff = this.dateDiff(this.now, event.startDate)
 
       if (diff != currentDiff) {
         currentDiff = diff
-        makeEventStack(currentDiff,this.now)
+        currentStack = makeEventStack(currentDiff,this.now)
 
         const tomorrowText = this.localization.tomorrowLabel
         const eventLabelText = (diff == 1 && tomorrowText.length) ? tomorrowText : this.formatDate(event.startDate,eventSettings.labelFormat)
@@ -83,7 +87,7 @@ module.exports = {
       const title = this.provideText(event.title.trim(), titleStack, this.format.eventTitle)
       const titlePadding = (showLocation || showTime) ? this.padding/5 : this.padding
       titleStack.setPadding(this.padding, this.padding, titlePadding, this.padding)
-      if (this.data.events.length >= 3) { title.lineLimit = 1 } // TODO: Make setting for this
+      if (events.length >= 3) { title.lineLimit = 1 } // TODO: Make setting for this
 
       if (showCalendarColor.length && showCalendarColor != "none" && showCalendarColor.includes("right")) {
         const colorItemText = " " + this.provideTextSymbol(colorShape)
@@ -121,13 +125,17 @@ module.exports = {
     }
   },
 
-  async reminders(column) {
-    if (!this.data.reminders) { await this.setupReminders() }
+  async reminders(this: WeatherCalContext, column: WidgetStack): Promise<void | WidgetText> {
+    if (!this.data.reminders) await this.setupReminders()
+    const reminders = this.data.reminders ?? []
     const reminderSettings = this.settings.reminders
 
-    if (this.data.reminders.length == 0) {
+    if (reminders.length == 0) {
       if (reminderSettings.noRemindersBehavior == "message" && this.localization.noRemindersMessage.length) { return this.provideText(this.localization.noRemindersMessage, column, this.format.noReminders, true) }
-      if (this[reminderSettings.noRemindersBehavior]) { return await this[reminderSettings.noRemindersBehavior](column) }
+      const customItem = this.custom?.[reminderSettings.noRemindersBehavior]
+      if (typeof customItem === "function" && this.custom) { await customItem.call(this.custom, column); return }
+      const fallback: unknown = Reflect.get(this, reminderSettings.noRemindersBehavior)
+      if (typeof fallback === "function") { await fallback.call(this, column); return }
     }
 
     const reminderStack = column.addStack()
@@ -136,12 +144,11 @@ module.exports = {
     const settingUrl = reminderSettings.url || ""
     reminderStack.url = (settingUrl.length > 0) ? settingUrl : "x-apple-reminderkit://REMCDReminder/"
 
-    const numberOfReminders = this.data.reminders.length
+    const numberOfReminders = reminders.length
     const showListColor = reminderSettings.showListColor
     const colorShape = showListColor.includes("circle") ? "circle" : "rectangle"
 
-    for (let i = 0; i < numberOfReminders; i++) {
-      const reminder = this.data.reminders[i]
+    for (const reminder of reminders) {
 
       const titleStack = this.align(reminderStack)
       titleStack.layoutHorizontally()

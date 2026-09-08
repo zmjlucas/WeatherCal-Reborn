@@ -1,18 +1,22 @@
+import { parseBackground } from "./types/background";
+import type { Background } from "./types/background";
+import type { LayoutInput, CustomItems } from "./types/context";
+import type { WeatherCalContext } from "./types/context";
 // Licensed under MIT. See LICENSE.
 
-module.exports = {
-  initialize(name, iCloudInUse) {
+export default {
+  initialize(this: WeatherCalContext, name: string, iCloudInUse: boolean): void {
       this.name = name
       this.fm = iCloudInUse ? FileManager.iCloud() : FileManager.local()
       this.bgPath = this.fm.joinPath(this.fm.libraryDirectory(), "weather-cal-" + this.name)
       this.prefPath = this.fm.joinPath(this.fm.libraryDirectory(), "weather-cal-preferences-" + name)
-      this.widgetUrl = "https://github.com/zmjlucas/WeatherCal-Reborn/releases/latest/download/weather-cal.js"
+      this.widgetUrl = "https://github.com/zmjlucas/WeatherCal-Reborn/releases/latest/download/one.js"
       this.now = new Date()
       this.data = {}
       this.initialized = true
     },
 
-  async createWidget(layout, name, iCloudInUse, custom) {
+  async createWidget(this: WeatherCalContext, layout: LayoutInput, name: string, iCloudInUse: boolean, custom?: CustomItems): Promise<ListWidget> {
       this.initialize(name, iCloudInUse)
       // iCloud metadata can exist before the preference files are downloaded.
       for (const path of [this.prefPath, this.bgPath]) {
@@ -32,7 +36,7 @@ module.exports = {
 
       // Shared values.
       this.locale = this.settings.widget.locale
-      this.padding = parseInt(this.settings.widget.padding)
+      this.padding = parseInt(String(this.settings.widget.padding))
       this.localization = this.settings.localization
       this.format = this.settings.font
       this.custom = custom
@@ -48,17 +52,17 @@ module.exports = {
       const horizontalPad = this.padding < 15 ? 15 - this.padding : 15
 
       const widgetPad = this.settings.widget.widgetPadding || {}
-      const topPad    = (widgetPad.top && widgetPad.top.length) ? parseInt(widgetPad.top) : verticalPad
-      const leftPad   = (widgetPad.left && widgetPad.left.length) ? parseInt(widgetPad.left) : horizontalPad
-      const bottomPad = (widgetPad.bottom && widgetPad.bottom.length) ? parseInt(widgetPad.bottom) : verticalPad
-      const rightPad  = (widgetPad.right && widgetPad.right.length) ? parseInt(widgetPad.right) : horizontalPad
+      const topPad    = (widgetPad.top !== undefined && String(widgetPad.top).length) ? parseInt(String(widgetPad.top)) : verticalPad
+      const leftPad   = (widgetPad.left !== undefined && String(widgetPad.left).length) ? parseInt(String(widgetPad.left)) : horizontalPad
+      const bottomPad = (widgetPad.bottom !== undefined && String(widgetPad.bottom).length) ? parseInt(String(widgetPad.bottom)) : verticalPad
+      const rightPad  = (widgetPad.right !== undefined && String(widgetPad.right).length) ? parseInt(String(widgetPad.right)) : horizontalPad
 
       this.widget.setPadding(topPad, leftPad, bottomPad, rightPad)
 
       // Background setup.
-      let background = { type: "color", color: "16296b" }
+      let background: Background = { type: "color", color: "16296b" }
       if (!(custom && custom.background)) {
-        try { background = JSON.parse(this.fm.readString(this.bgPath)) || background } catch { }
+        try { background = parseBackground(JSON.parse(this.fm.readString(this.bgPath))) ?? background } catch { }
       }
 
       if (custom && custom.background) {
@@ -101,15 +105,15 @@ module.exports = {
       }
 
       // Construct the widget.
-      this.currentRow = {}
-      this.currentColumn = {}
+      this.currentRow = undefined
+      this.currentColumn = undefined
       this.left()
 
       this.usingASCII = undefined
       this.currentColumns = []
       this.rowNeedsSetup = false
 
-      for (const rawLine of this.settings.layout.split(/\r?\n/)) {
+      for (const rawLine of (this.settings.layout ?? "").split(/\r?\n/)) {
         const line = rawLine.trim()
         if (line == '') { continue }
         if (this.usingASCII == undefined) {

@@ -1,12 +1,15 @@
+import type { WeatherCalContext } from "../types/context";
 // Licensed under MIT. See LICENSE.
 // Current and upcoming weather preserve the public helper context used by custom items.
 
-module.exports = {
-  async current(column) {
-    if (!this.data.weather) { await this.setupWeather() }
+export default {
+  async current(this: WeatherCalContext, column: WidgetStack): Promise<void> {
+    if (!this.data.weather) await this.setupWeather()
+    const weatherData = this.data.weather
+    if (!weatherData) throw new Error("Weather setup did not provide weather data.")
     if (!this.data.sun) { await this.setupSunrise() }
 
-    const [locationData, weatherData, sunData] = [this.data.location, this.data.weather, this.data.sun]
+    const locationData = this.data.location
     const weatherSettings = this.settings.weather
 
     // Setting up the current weather stack.
@@ -19,7 +22,7 @@ module.exports = {
     if (settingUrl.trim() != "none") { currentWeatherStack.url = (settingUrl.length > 0) ? settingUrl : defaultUrl }
 
     // Displaying the main conditions.
-    if (weatherSettings.showLocation) { this.provideText(locationData.locality, currentWeatherStack, this.format.smallTemp, true) }
+    if (weatherSettings.showLocation) { this.provideText(locationData?.locality, currentWeatherStack, this.format.smallTemp, true) }
 
     const mainConditionStack = this.align(currentWeatherStack)
     const mainCondition = mainConditionStack.addImage(this.provideConditionSymbol(weatherData.currentCondition,this.isNight(this.now)))
@@ -57,7 +60,6 @@ module.exports = {
 
     const tempBar = tempBarStack.addImage(this.provideTempBar())
     if (this.settings.widget.instantDark) this.tintIcon(tempBar, this.format.tinyTemp, true)
-    tempBar.size = new Size(50,0)
 
     tempBarStack.addSpacer(1)
 
@@ -68,18 +70,20 @@ module.exports = {
     this.provideText(this.displayNumber(weatherData.todayHigh,"-"), highLowStack, this.format.tinyTemp)
   },
 
-  async future(column) {
-    if (!this.data.weather) { await this.setupWeather() }
+  async future(this: WeatherCalContext, column: WidgetStack): Promise<void> {
+    if (!this.data.weather) await this.setupWeather()
+    const weatherData = this.data.weather
+    if (!weatherData) throw new Error("Weather setup did not provide weather data.")
     if (!this.data.sun) { await this.setupSunrise() }
 
-    const [locationData, weatherData, sunData] = [this.data.location, this.data.weather, this.data.sun]
+    const locationData = this.data.location
     const weatherSettings = this.settings.weather
 
     const futureWeatherStack = column.addStack()
     futureWeatherStack.layoutVertically()
     futureWeatherStack.setPadding(0, 0, 0, 0)
 
-    const showNextHour = (this.now.getHours() < parseInt(weatherSettings.tomorrowShownAtHour))
+    const showNextHour = (this.now.getHours() < parseInt(String(weatherSettings.tomorrowShownAtHour)))
 
     const defaultUrl = "weather://"
     const settingUrl = showNextHour ? (weatherSettings.urlFuture || "") : (weatherSettings.urlForecast || "")
@@ -98,14 +102,16 @@ module.exports = {
     let nightCondition = false
     if (showNextHour) { nightCondition = this.isNight(new Date(this.now.getTime() + (60*60*1000))) }
 
-    const subCondition = subConditionStack.addImage(this.provideConditionSymbol(showNextHour ? weatherData.hourly[1].Condition : weatherData.forecast[1].Condition,nightCondition))
+    const nextHour = weatherData.hourly[1]
+    const tomorrow = weatherData.forecast[1]
+    const subCondition = subConditionStack.addImage(this.provideConditionSymbol(showNextHour ? (nextHour?.Condition ?? 100) : (tomorrow?.Condition ?? 100),nightCondition))
     const subConditionSize = showNextHour ? 14 : 18
     subCondition.imageSize = new Size(subConditionSize, subConditionSize)
     this.tintIcon(subCondition, this.format.smallTemp)
     subConditionStack.addSpacer(5)
 
     if (showNextHour) {
-      this.provideText(this.displayNumber(weatherData.hourly[1].Temp,"--") + "°", subConditionStack, this.format.smallTemp)
+      this.provideText(this.displayNumber(nextHour?.Temp,"--") + "°", subConditionStack, this.format.smallTemp)
 
     } else {
       const tomorrowLine = subConditionStack.addImage(this.drawVerticalLine(this.provideColor(this.format.tinyTemp, 0.5), 20))
@@ -115,9 +121,9 @@ module.exports = {
       const tomorrowStack = subConditionStack.addStack()
       tomorrowStack.layoutVertically()
 
-      this.provideText(this.displayNumber(weatherData.forecast[1].High,"-"), tomorrowStack, this.format.tinyTemp)
+      this.provideText(this.displayNumber(tomorrow?.High,"-"), tomorrowStack, this.format.tinyTemp)
       tomorrowStack.addSpacer(4)
-      this.provideText(this.displayNumber(weatherData.forecast[1].Low,"-"), tomorrowStack, this.format.tinyTemp)
+      this.provideText(this.displayNumber(tomorrow?.Low,"-"), tomorrowStack, this.format.tinyTemp)
     }
 
     if (weatherSettings.showRain) {
