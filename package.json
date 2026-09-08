@@ -4,10 +4,10 @@
   "private": true,
   "description": "Modular Scriptable Weather Cal widgets",
   "license": "MIT",
-  "engines": {
-    "node": ">=22"
-  },
+  "engines": { "node": ">=22" },
   "scripts": {
-    "test": "node --test tests/*.test.js"
+    "build": "node scripts/build.js",
+    "test": "node --test tests/*.test.js",
+    "check": "npm test && npm run build && node scripts/check.js"
   }
 }
