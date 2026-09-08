@@ -5,17 +5,17 @@ Compatibility reference: the project linked in the [README credits](../README.md
 | Feature | Implementation | Behavioral coverage |
 | --- | --- | --- |
 | Setup, permissions, API signup/key entry, preview, preferences, updates, export/import, reset | `src/setup/` | setup and distribution tests |
-| Local/iCloud launcher, automatic engine download, duplicate widgets, custom object | `src/scriptable/launcher.js`, `src/widget.js` | integration and layout tests |
-| Solid, automatic/custom gradient, light/dark Photos images, custom backgrounds | `src/widget.js`, `src/core/gradient.js`, `src/setup/backgrounds.js` | layout/setup/distribution tests |
-| Text DSL, ASCII rows/columns, dimensions, alignment, fixed/flexible spaces, custom dispatch | `src/layout/engine.js` | layout tests |
+| Local/iCloud standalone widget, protected updates, duplicate widgets, custom object | `src/entry.ts`, `src/widget.ts` | integration and layout tests |
+| Solid, automatic/custom gradient, light/dark Photos images, custom backgrounds | `src/widget.ts`, `src/core/gradient.ts`, `src/setup/backgrounds.ts` | layout/setup/distribution tests |
+| Text DSL, ASCII rows/columns, dimensions, alignment, fixed/flexible spaces, custom dispatch | `src/layout/engine.ts` | layout tests |
 | Text/enum/bool/font/multi-value/multi-select editing; localization; default merging | `src/preferences/` | preference tests |
-| Date sizes, greetings, events, reminders, calendar/list colors, empty-state behavior, deep links | `src/items/calendar.js`, `basic.js`, `src/data/agenda.js` | item and data tests |
-| Current/future weather, daily/hourly forecasts, rain, high/low bar, sunrise/sunset | `src/items/weather.js`, `forecast.js`, `sun.js`, `src/data/weather.js` | item/data/core tests |
-| Battery level/charging, ISO week, text and SF Symbols | `src/items/basic.js`, `src/core/drawing.js` | item/core tests |
-| RSS/Atom news, dates, links, COVID numeric tokens | `src/items/feeds.js`, `src/data/feeds.js` | item/data tests |
-| Location/reverse geocoding, locale/units, API versions, bounded cache fallback | `src/data/`, `src/core/storage.js` | data/core tests |
-| Custom helper API, formatting, capitalization, fonts, colors and icon tint | `src/core/`, `src/create.js` | core and integration tests |
-| Converter companion script | `src/converter.js`, `src/converter/tokens.js`, `src/scriptable/converter.js` | converter/build tests |
+| Date sizes, greetings, events, reminders, calendar/list colors, empty-state behavior, deep links | `src/items/calendar.ts`, `basic.ts`, `src/data/agenda.ts` | item and data tests |
+| Current/future weather, daily/hourly forecasts, rain, high/low bar, sunrise/sunset | `src/items/weather.ts`, `forecast.ts`, `sun.ts`, `src/data/weather.ts` | item/data/core tests |
+| Battery level/charging, ISO week, text and SF Symbols | `src/items/basic.ts`, `src/core/drawing.ts` | item/core tests |
+| RSS/Atom news, dates, links, COVID numeric tokens | `src/items/feeds.ts`, `src/data/feeds.ts` | item/data tests |
+| Location/reverse geocoding, locale/units, API versions, bounded cache fallback | `src/data/`, `src/core/storage.ts` | data/core tests |
+| Custom helper API, formatting, capitalization, fonts, colors and icon tint | `src/core/`, `src/create.ts` | core and integration tests |
+| Converter companion script | `src/converter.ts`, `src/converter/tokens.ts`, `src/scriptable/converter.ts` | converter/build tests |
 
 The 17 content item names are `date`, `greeting`, `events`, `reminders`, `current`, `future`, `forecast`, `daily`, `hourly`, `sunrise`, `sunset`, `covid`, `text`, `battery`, `week`, `symbol`, and `news`. `forecast`/`daily` are aliases; sunrise/sunset remain automatic unless their separate-elements preference is enabled. Layout directives include `row`, `column`, `space`, `left`, `right`, and `center`; alignment helpers remain exposed to custom code.
 
@@ -25,7 +25,7 @@ All original preference categories remain: widget, localization, font, date, eve
 
 The refactor fixes undeclared loop variables, partial/corrupt settings, asynchronous permission handling, same-name storage switching, stale per-render state, missing custom-background files, nested layout parameters and unclosed ASCII rows. Events include the whole final requested day, including today when zero future days are selected. Forecast reads are bounded; missing weather and equal temperature bounds produce valid placeholders/drawing geometry. Reminder fonts, disabled tap links, zero statistics, optional symbol settings and missing news dates are handled correctly.
 
-Export/import preserves exact launcher code, punctuation and custom functions, and embeds both background images. Update failures preserve installed code. Reset touches only the selected widget. The font editor preserves drafts when changing capitalization. The converter preserves surrounding syntax, quoted code examples and dollar-prefixed identifiers.
+Export/import preserves exact script code, punctuation and custom functions, and embeds both background images. Update failures preserve installed code. Reset touches only the selected widget. The font editor preserves drafts when changing capitalization. The converter preserves surrounding syntax, quoted code examples and dollar-prefixed identifiers.
 
 ## Storage compatibility
 
