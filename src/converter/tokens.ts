@@ -1,12 +1,14 @@
 /** Token spans for conventional Scriptable scripts; literals/comments stay untouched.
  * Template literals are deliberately opaque, so their embedded code needs manual review.
  */
-function tokenize(source) {
-  const tokens = [];
+export interface Token { value: string; start: number; end: number }
+
+export function tokenize(source: string): Token[] {
+  const tokens: Token[] = [];
   let index = 0;
   while (index < source.length) {
     const start = index;
-    const char = source[index];
+    const char = source.charAt(index);
     if (/\s/.test(char)) { index++; continue; }
     if (source.startsWith('//', index)) {
       const end = source.indexOf('\n', index);
@@ -36,10 +38,9 @@ function tokenize(source) {
     }
     if (/[A-Za-z_$]/.test(char)) {
       index++;
-      while (index < source.length && /[\w$]/.test(source[index])) index++;
+      while (index < source.length && /[\w$]/.test(source.charAt(index))) index++;
     } else { index++; }
     tokens.push({ value: source.slice(start, index), start, end: index });
   }
   return tokens;
 }
-module.exports = { tokenize };
