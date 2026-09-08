@@ -15,7 +15,8 @@ const globals = new Set(('undefined NaN Infinity Object Function Boolean Symbol 
   'DateFormatter DatePicker Device Dictation DocumentPicker DrawContext FileManager Font Image Keychain LinearGradient ' +
   'ListWidget Location Mail Message Notification Pasteboard Path Photos Point QuickLook Rect RecurrenceRule ' +
   'RelativeDateTimeFormatter Reminder Request SFSymbol Safari Script ShareSheet Size Speech TextField Timer UITable ' +
-  'UITableCell UITableRow URLScheme UUID WebView WidgetDate WidgetImage WidgetSpacer WidgetStack WidgetText XMLParser').split(' '));
+  'UITableCell UITableRow URLScheme UUID WebView WidgetDate WidgetImage WidgetSpacer WidgetStack WidgetText XMLParser ' +
+  'log logWarning logError atob btoa').split(' '));
 
 // Acorn produces a closed ESTree union. Enumerating children keeps this validator
 // independent of parser internals, including future additional AST properties.
@@ -47,12 +48,14 @@ function inspectSource(source: string, filename: string, checkReferences = true)
   }
   function declarations(node: AnyNode, incoming: Scope): void {
     let scope = incoming;
+    let functionBody: AnyNode | undefined;
     if ((node.type === 'FunctionDeclaration' || node.type === 'ClassDeclaration') && node.id) bind(node.id, incoming);
     if (node.type === 'FunctionDeclaration' || node.type === 'FunctionExpression' || node.type === 'ArrowFunctionExpression') {
       scope = { names: new Set(), parent: incoming, functionScope: true };
       if (node.type !== 'ArrowFunctionExpression') scope.names.add('arguments');
       if ('id' in node && node.id) bind(node.id, scope);
       for (const param of node.params) bind(param, scope);
+      functionBody = node.body;
     } else if (['BlockStatement', 'CatchClause', 'ForStatement', 'ForInStatement', 'ForOfStatement',
       'SwitchStatement', 'ClassDeclaration', 'ClassExpression'].includes(node.type)) {
       scope = { names: new Set(), parent: incoming, functionScope: false };
@@ -65,7 +68,11 @@ function inspectSource(source: string, filename: string, checkReferences = true)
     }
     if ((node.type === 'ClassDeclaration' || node.type === 'ClassExpression') && node.id) bind(node.id, scope);
     if (node.type === 'CatchClause' && node.param) bind(node.param, scope);
-    for (const child of children(node)) declarations(child, scope);
+    for (const child of children(node)) {
+      // Body declarations are invisible to default parameter initializers.
+      const childScope = child === functionBody ? { names: new Set<string>(), parent: scope, functionScope: true } : scope;
+      declarations(child, childScope);
+    }
   }
   declarations(tree, root);
   function visit(node: AnyNode, parent?: AnyNode): void {

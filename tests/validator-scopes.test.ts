@@ -14,6 +14,13 @@ test('arguments belongs to normal functions and is inherited by arrows', () => {
   expect(() => validateSource('const arrow = () => arguments[0];')).toThrow();
 });
 
+test('function parameter defaults cannot use bindings declared only in the body', () => {
+  expect(() => validateSource('function local(value = new URL("x")) { var URL; return value; } local();')).toThrow();
+  expect(() => validateSource('function local(value = () => hidden) { var hidden; return value(); } local();')).toThrow();
+  validateSource('function local(value = arguments[0]) { var hidden; return value; }');
+  validateSource('const available = 1; function local(value = available) { var available = 2; return value; }');
+});
+
 test('editable and engine boundaries cannot divide a JavaScript statement', () => {
   const source = '// Variables used by Scriptable.\n// WeatherCal: user begin v1\nfunction unfinished() {\n' +
     '// WeatherCal: user end v1\n// WeatherCal: engine begin v1\n}\n// WeatherCal: engine end v1\n';
