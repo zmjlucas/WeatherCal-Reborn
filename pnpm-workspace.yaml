@@ -1,0 +1,6 @@
+engineStrict: true
+strictPeerDependencies: true
+savePrefix: ''
+enableGlobalVirtualStore: false
+allowBuilds:
+  esbuild: true

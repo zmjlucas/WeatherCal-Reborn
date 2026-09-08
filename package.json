@@ -4,10 +4,33 @@
   "private": true,
   "description": "Modular Scriptable Weather Cal widgets",
   "license": "MIT",
-  "engines": { "node": ">=22" },
+  "type": "module",
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": "24.20.0",
+    "pnpm": "11.19.0"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "24.20.0",
+      "onFail": "download"
+    }
+  },
   "scripts": {
-    "build": "node scripts/build.js",
-    "test": "node --test tests/*.test.js",
-    "check": "npm test && npm run build && node scripts/check.js"
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.test.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "validate:bundle": "node scripts/validate-bundle.mjs",
+    "check": "pnpm typecheck && pnpm test && pnpm build && pnpm validate:bundle"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "@types/scriptable-ios": "1.7.9",
+    "acorn": "8.18.0",
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2",
+    "vitest": "4.1.11"
   }
 }
