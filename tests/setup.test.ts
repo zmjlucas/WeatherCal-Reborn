@@ -1,20 +1,16 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { installScriptable } = require('./helpers/scriptable');
-const prompts = require('../src/core/prompts');
-const storage = require('../src/core/storage');
-const preferences = require('../src/preferences/store');
+import { test } from 'vitest';
+import assert from 'node:assert/strict';
+import { installScriptable, runtime, required } from './helpers/scriptable';
+import { createWeatherCal } from '#source/create';
+import type { TestContext } from 'vitest';
+import type { EnvironmentOptions } from './helpers/scriptable';
 
-function setup(t, options = {}) {
+function setup(t: TestContext, options: EnvironmentOptions = {}) {
   const env = installScriptable(t, options);
-  let methods = {};
-  for (const name of ['menu', 'onboarding', 'backgrounds', 'distribution']) {
-    Object.assign(methods, require('../src/setup/' + name));
-  }
-  const engine = Object.assign({ name: 'Test Widget', fm: options.iCloud ? env.cloud : env.local,
-    bgPath: '/library/weather-cal-Test Widget', prefPath: '/library/weather-cal-preferences-Test Widget',
-    widgetUrl: 'https://example.test/weather-cal.js', initialized: true, data: {}, setupLocation: async () => true
-  }, require('../src/widget'), prompts, storage, preferences, methods);
+  const engine = createWeatherCal();
+  engine.initialize('Test Widget', options.iCloud ?? false);
+  engine.widgetUrl = 'https://example.test/one.js';
+  engine.setupLocation = async () => true;
   return { env, engine };
 }
 
@@ -29,17 +25,16 @@ test('first run completes permission checks, supports no-weather setup and persi
 test('permission failures can exit onboarding without marking setup complete', async t => {
   const { env, engine } = setup(t, { responses: [0, 0, 1] });
   engine.setupLocation = async () => { throw new Error('Denied'); };
-  globalThis.CalendarEvent.today = async () => { throw new Error('Denied'); };
+  runtime.CalendarEvent.today = async () => { throw new Error('Denied'); };
   assert.equal(await engine.initialSetup(), undefined);
   assert.equal(env.local.fileExists('/library/weather-cal-setup'), false);
-  assert.match(env.alerts[2].title, /location and calendar/);
+  assert.match(required(env.alerts[2]).title, /location and calendar/);
 });
 
 test('API keys are trimmed and persisted only when a nonempty value is entered', async t => {
-  const { env, engine } = setup(t, { responses: [{ fields: ['   '] }, 0, { fields: [' abc123 '] }, 0] });
+  const { env, engine } = setup(t, { responses: [{ fields: ['   '] }, 0, { fields: [' abc123 '] }, 0], request: async url => { assert.equal(new URL(url).searchParams.get('appid'), 'abc123'); return { current: {} }; } });
   assert.equal(await engine.getWeatherKey(), false);
   assert.equal(env.local.fileExists('/library/weather-cal-api-key'), false);
-  engine.getWeatherApiPath = async key => { assert.equal(key, 'abc123'); return { current: {} }; };
   assert.equal(await engine.getWeatherKey(true), true);
   assert.equal(env.local.readString('/library/weather-cal-api-key'), 'abc123');
 });
@@ -79,9 +74,9 @@ test('existing widget setup routes to preview and background setup', async t => 
 
 test('preferences and API-key menu actions dispatch without displaying an unintended preview', async t => {
   const { engine } = setup(t, { responses: [2, 5, 0] });
-  const visited = [];
-  engine.editPreferences = async () => visited.push('preferences');
-  engine.getWeatherKey = async () => visited.push('key');
+  const visited: string[] = [];
+  engine.editPreferences = async () => { visited.push('preferences'); };
+  engine.getWeatherKey = async () => { visited.push('key'); return true; };
   await engine.editSettings('engine', '');
   await engine.editSettings('engine', '');
   assert.deepEqual(visited, ['preferences', 'key']);
@@ -110,7 +105,7 @@ test('cancelling a photo picker preserves the previous images and background', a
   const light = '/documents/Weather Cal/Test Widget.jpg';
   env.local.writeImage(light, { previous: true });
   let calls = 0;
-  globalThis.Photos.fromLibrary = async () => {
+  runtime.Photos.fromLibrary = async () => {
     if (++calls === 1) return { replacement: true };
     throw new Error('Selection cancelled');
   };
@@ -121,8 +116,7 @@ test('cancelling a photo picker preserves the previous images and background', a
 
 test('setup switches storage for repeated calls using the same widget name', async t => {
   const { env, engine } = setup(t, { responses: [0, 0] });
-  Object.assign(engine, require('../src/widget'));
-  for (const [files, preview] of [[env.local, 'small'], [env.cloud, 'medium']]) {
+  for (const [files, preview] of [[env.local, 'small'], [env.cloud, 'medium']] as const) {
     files.writeString('/library/weather-cal-setup', 'true');
     files.writeString(engine.bgPath, JSON.stringify({ type: 'color', color: '123456' }));
     files.writeString(engine.prefPath, JSON.stringify({ widget: { preview } }));

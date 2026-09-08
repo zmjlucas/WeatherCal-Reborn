@@ -1,0 +1,26 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": [
+      "ES2023"
+    ],
+    "types": [
+      "node"
+    ],
+    "allowJs": true,
+    "checkJs": false,
+    "paths": {
+      "#source/*": [
+        "./.typecheck/src/*"
+      ],
+      "#scriptable": [
+        "./.typecheck/scriptable.d.ts"
+      ]
+    }
+  },
+  "include": [
+    "tests/**/*.ts",
+    "vitest.config.ts",
+    "scripts/*.mjs"
+  ]
+}

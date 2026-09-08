@@ -1,45 +1,46 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const vm = require('node:vm');
-const { installScriptable, createEnvironment } = require('./helpers/scriptable');
-const prompts = require('../src/core/prompts');
-const storage = require('../src/core/storage');
+import { test } from 'vitest';
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import { installScriptable, createEnvironment, required } from './helpers/scriptable';
+import { initializedContext } from './helpers/context';
+import { scriptFixture } from './helpers/script-format';
+import { splitScript } from '#source/setup/script-format';
+import type { EnvironmentOptions } from './helpers/scriptable';
+import type { TestContext } from 'vitest';
 
-function engineFor(t, options = {}) {
+async function engineFor(t: TestContext, options: EnvironmentOptions = {}) {
   const env = installScriptable(t, options);
-  let methods = {};
-  for (const name of ['menu', 'distribution']) {
-    Object.assign(methods, require('../src/setup/' + name));
-  }
-  const engine = Object.assign({ fm: options.iCloud ? env.cloud : env.local, name: 'Test Widget',
-    bgPath: '/library/weather-cal-Test Widget', prefPath: '/library/weather-cal-preferences-Test Widget',
-    widgetUrl: 'https://example.test/weather-cal.js', previewValue: () => 'large',
-    getSettings: async () => ({ localization: { greeting: "It's `fine` ${globalThis.injected = true} \\\nnext" } })
-  }, prompts, storage, methods);
+  const engine = await initializedContext(env);
+  if (options.iCloud) engine.fm = env.cloud;
+  engine.widgetUrl = 'https://example.test/one.js';
+  const settings = await engine.getSettings();
+  settings.localization.morningGreeting = "It's `fine` ${globalThis.injected = true} \\\nnext";
+  engine.fm.writeString(engine.prefPath, JSON.stringify(settings));
   return { engine, env };
 }
 
-const launcher = '// Variables used by Scriptable.\nconst layout = `row\n column\n text(It\'s \\`fine\\`)`;\nconst custom = { hello: () => "${literal}" };\n';
+const launcher = scriptFixture('const layout = `row\n column\n text(Original)`;\nconst custom = { hello: () => "${literal}" };');
 
 test('update validates Scriptable content and preserves installed code on failure', async t => {
   let response = '<html>unavailable</html>';
-  const { engine, env } = engineFor(t, { request: async () => response });
-  env.local.writeString('/documents/engine.js', 'old code');
-  assert.equal(await engine.downloadCode('engine', 'https://example.test/code'), false);
-  assert.equal(env.local.readString('/documents/engine.js'), 'old code');
-  response = launcher;
-  assert.equal(await engine.downloadCode('engine', 'https://example.test/code'), true);
-  assert.equal(env.local.readString('/documents/engine.js'), launcher);
+  const { engine, env } = await engineFor(t, { request: async () => response });
+  env.local.writeString('/documents/Test Widget.js', launcher);
+  assert.equal(await engine.downloadCode(engine.name, 'https://example.test/code'), false);
+  assert.equal(env.local.readString('/documents/Test Widget.js'), launcher);
+  response = scriptFixture('const layout = `replacement`; const custom = {};', 'const version = 2;');
+  assert.equal(await engine.downloadCode(engine.name, 'https://example.test/code'), true);
+  assert.equal(splitScript(env.local.readString('/documents/Test Widget.js')).user, splitScript(launcher).user);
+  assert.equal(splitScript(env.local.readString('/documents/Test Widget.js')).engine, splitScript(response).engine);
 });
 
 test('cancelled update performs no download', async t => {
-  const { engine, env } = engineFor(t, { responses: [3, 1] });
+  const { engine, env } = await engineFor(t, { responses: [3, 1] });
   await engine.editSettings('engine', 'https://example.test/code');
   assert.equal(env.requests.length, 0);
 });
 
 test('widget export restores exact source, punctuation and preferences without evaluating embedded content', async t => {
-  const { engine, env } = engineFor(t, { iCloud: true, responses: [4, 0] });
+  const { engine, env } = await engineFor(t, { iCloud: true, responses: [4, 0] });
   env.cloud.writeString('/documents/Test Widget.js', launcher);
   const background = { type: 'gradient', initialColor: '123456', finalColor: 'abcdef' };
   env.cloud.writeString(engine.bgPath, JSON.stringify(background));
@@ -49,7 +50,9 @@ test('widget export restores exact source, punctuation and preferences without e
   assert(env.downloads.includes(engine.bgPath));
   const destination = createEnvironment({ name: 'Imported Widget', responses: [0, 0] });
   const context = vm.createContext({ ...destination.globals, module: { filename: '/documents/Imported Widget.js' } });
-  await vm.runInContext('(async () => {' + env.exports[0].value + '\n})()', context);
+  const exported = required(env.exports[0]);
+  assert(typeof exported === 'object');
+  await vm.runInContext('(async () => {' + exported.value + '\n})()', context);
   assert.equal(destination.local.readString('/documents/Imported Widget.js'), launcher);
   assert.deepEqual(JSON.parse(destination.local.readString('/library/weather-cal-preferences-Imported Widget')), await engine.getSettings());
   assert.deepEqual(JSON.parse(destination.local.readString('/library/weather-cal-Imported Widget')), background);
@@ -57,7 +60,7 @@ test('widget export restores exact source, punctuation and preferences without e
 });
 
 test('reset deletes only the selected widget after replacement download succeeds', async t => {
-  const { engine, env } = engineFor(t, { responses: [5, 1, 0], request: async () => launcher });
+  const { engine, env } = await engineFor(t, { responses: [5, 1, 0], request: async () => launcher });
   const owned = [engine.bgPath, engine.prefPath, '/documents/Weather Cal/Test Widget.jpg', '/documents/Weather Cal/Test Widget (Dark).jpg'];
   const other = ['/library/weather-cal-Other', '/library/weather-cal-preferences-Other', '/library/weather-cal-api-key', '/library/weather-cal-setup', '/documents/Weather Cal/Other.jpg'];
   for (const path of [...owned, ...other]) env.local.writeString(path, 'keep');
@@ -68,7 +71,7 @@ test('reset deletes only the selected widget after replacement download succeeds
 });
 
 test('failed and cancelled reset preserve the widget', async t => {
-  const { engine, env } = engineFor(t, { responses: [5, 1, 1, 5, 1, 0] });
+  const { engine, env } = await engineFor(t, { responses: [5, 1, 1, 5, 1, 0] });
   env.local.writeString(engine.bgPath, 'existing background');
   await engine.editSettings('engine', 'https://example.test/code');
   assert.equal(env.requests.length, 0);
@@ -77,10 +80,7 @@ test('failed and cancelled reset preserve the widget', async t => {
 });
 
 test('image exports embed both appearances and import them under the new widget name', async t => {
-  const { engine, env } = engineFor(t, { iCloud: true });
-  const originalData = globalThis.Data;
-  globalThis.Data = { fromPNG: value => ({ toBase64String: () => Buffer.from(JSON.stringify(value)).toString('base64') }) };
-  t.after(() => { if (originalData === undefined) delete globalThis.Data; else globalThis.Data = originalData; });
+  const { engine, env } = await engineFor(t, { iCloud: true });
   env.cloud.writeString('/documents/Test Widget.js', launcher);
   env.cloud.writeString(engine.bgPath, JSON.stringify({ type: 'image', dark: true }));
   env.cloud.writeImage('/documents/Weather Cal/Test Widget.jpg', { pixels: 'light' });
@@ -88,8 +88,8 @@ test('image exports embed both appearances and import them under the new widget 
   const exported = await engine.exportWidget();
   const destination = createEnvironment({ iCloud: true, name: 'Vacation' });
   const globals = { ...destination.globals,
-    Data: { fromBase64String: value => JSON.parse(Buffer.from(value, 'base64').toString()) },
-    Image: { fromData: value => value }, module: { filename: '/documents/Vacation.js' }
+    Data: destination.globals.Data,
+    Image: destination.globals.Image, module: { filename: '/documents/Vacation.js' }
   };
   await vm.runInNewContext('(async () => {' + exported + '\n})()', globals);
   assert.deepEqual(destination.cloud.readImage('/documents/Weather Cal/Vacation.jpg'), { pixels: 'light' });
@@ -98,7 +98,7 @@ test('image exports embed both appearances and import them under the new widget 
 });
 
 test('cancelled import writes no files', async t => {
-  const { engine, env } = engineFor(t);
+  const { engine, env } = await engineFor(t);
   env.local.writeString('/documents/Test Widget.js', launcher);
   env.local.writeString(engine.bgPath, JSON.stringify({ type: 'auto' }));
   const exported = await engine.exportWidget();
@@ -108,7 +108,7 @@ test('cancelled import writes no files', async t => {
 });
 
 test('export menu supports Quick Look and reports unavailable source without exporting partial data', async t => {
-  const { engine, env } = engineFor(t, { responses: [4, 1, 4] });
+  const { engine, env } = await engineFor(t, { responses: [4, 1, 4] });
   env.local.writeString('/documents/Test Widget.js', launcher);
   env.local.writeString(engine.bgPath, JSON.stringify({ type: 'auto' }));
   await engine.editSettings('engine', 'https://example.test/code');
@@ -116,5 +116,31 @@ test('export menu supports Quick Look and reports unavailable source without exp
   env.local.remove('/documents/Test Widget.js');
   await engine.editSettings('engine', 'https://example.test/code');
   assert.equal(env.exports.length, 1);
-  assert.match(env.alerts.at(-1).title, /export failed/i);
+  assert.match(required(env.alerts.at(-1)).title, /export failed/i);
+});
+
+test('updates cannot write another widget and failed source validation preserves every owned file', async t => {
+  let response = scriptFixture(undefined, 'const invalid = ;');
+  const { engine, env } = await engineFor(t, { request: async () => response });
+  env.local.writeString('/documents/Test Widget.js', launcher);
+  env.local.writeString('/documents/Other Widget.js', 'other script');
+  env.local.writeString(engine.bgPath, '{"type":"color","color":"123456"}');
+  const before = new Map([...env.local.store].map(([path, value]) => [path, { ...value }]));
+  assert.equal(await engine.downloadCode('Other Widget', engine.widgetUrl), false);
+  assert.equal(env.requests.length, 0);
+  assert.equal(await engine.downloadCode(engine.name, engine.widgetUrl), false);
+  assert.deepEqual(env.local.store, before);
+  response = '<html>Unavailable</html>';
+  assert.equal(await engine.downloadCode(engine.name, engine.widgetUrl, true), false);
+  assert.deepEqual(env.local.store, before);
+});
+
+test('legacy dual-file update preserves the installation and its preferences', async t => {
+  const { engine, env } = await engineFor(t, { request: async () => launcher });
+  const source = '// Variables used by Scriptable.\nconst code = importModule("weather-cal-code");';
+  env.local.writeString('/documents/Test Widget.js', source);
+  const preferences = env.local.readString(engine.prefPath);
+  assert.equal(await engine.downloadCode(engine.name, engine.widgetUrl), false);
+  assert.equal(env.local.readString('/documents/Test Widget.js'), source);
+  assert.equal(env.local.readString(engine.prefPath), preferences);
 });

@@ -19,7 +19,7 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
-    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.test.json",
+    "typecheck": "tsc -p tsconfig.json && node scripts/prepare-test-types.mjs && tsc -p tsconfig.test.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "validate:bundle": "node scripts/validate-bundle.mjs",
