@@ -161,13 +161,34 @@ OpenWeather key/path files and validation helpers remain supported.
 The adapter calls `weather/v1/current`, `hourly?hours=24`, and `daily?days=8`.
 Coordinates are rounded to two decimals. It converts metric temperatures to the
 widget's unit selection, maps weather conditions, and aligns hourly slots using
-forecast timestamps. Daily values include sunrise/sunset; daytime/nighttime rain
-probabilities are not treated as an all-day probability, so QWeather's tomorrow
-rain percentage displays `--`. This change supports existing weather items; it
-does not add AQI, alerts or minutely-rain items. Returned attribution statements
-are retained in the weather data but are not rendered as a widget footer.
+forecast timestamps. Daily values include sunrise/sunset. Tomorrow displays
+daytime and nighttime rain probabilities separately; missing values display
+`--`. They are not combined into an all-day probability. The separate `rain`
+item below provides minutely precipitation timing. Returned weather attribution
+statements are retained in the data but are not rendered as a weather footer.
 
 ### Request budget and failures
+
+The QWeather host-state module, `src/data/qweather-state.ts`, owns credential
+validation and persistence, the opaque cache namespace, same-host serialization,
+cooldown, backoff and authenticated request pacing. Setup uses
+`saveQWeatherCredentials`; it does not know credential names or cooldown paths.
+The provider loader in `src/data/qweather.ts` selects the weather cache, builds
+endpoint paths and interprets responses. Its cache recheck runs inside
+`withQWeatherState`, before `refresh` checks credentials or cooldown, so fresh
+cached weather remains usable without a key. A changed key retains the cache
+namespace and weather cache; a blank key keeps the entered host's saved key.
+Request processing and cache-write failures remain part of the refresh attempt.
+The minutely loader in `src/data/rain.ts` uses the same state module, with
+`refresh(operation, 'minutely')` isolating its product-specific failures while
+sharing host request pacing and rate limits. A changed key clears both cooldowns.
+
+The state module uses Scriptable's existing runtime objects; tests substitute
+offline request and in-memory storage adapters at that internal seam.
+`tests/qweather-state.test.ts` exercises state transitions and request policy;
+`tests/weather-provider-setup.test.ts` checks setup-to-weather behavior. Saving
+credentials during an in-flight request retains the existing sequencing and
+does not provide transactional credential rotation.
 
 - Cold fetch: three sequential requests, spaced at least one second apart.
 - Weather and sunrise reuse a 15-minute cache keyed by provider, host, rounded

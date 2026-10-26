@@ -1,7 +1,8 @@
-import { test, vi } from 'vitest';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { installScriptable, required, runtime, texts } from './helpers/scriptable';
 import { initializedContext } from './helpers/context';
+import { qweatherPayload as payload } from './helpers/qweather';
 import type { EnvironmentOptions } from './helpers/scriptable';
 import type { TestContext } from 'vitest';
 
@@ -36,22 +37,6 @@ test('saved manual units override device region and saved auto continues followi
   }
 });
 
-function payload(url: string): unknown {
-  const metadata = { attributions: ['QWeather test data'] };
-  if (url.includes('/current/')) return { metadata, condition: { code: '100', text: '晴' }, temperature: { value: 20, unit: '°C' } };
-  if (url.includes('/hourly/')) return { metadata, hours: [
-    { forecastTime: '2026-10-26T12:00+08:00', temperature: { value: 21, unit: '°C' }, condition: { code: '101', text: '多云' }, precipitation: { probability: 0 } },
-    { forecastTime: '2026-10-26T13:00+08:00', temperature: { value: 22, unit: '°C' }, condition: { code: '305', text: '小雨' }, precipitation: { probability: 0.35 } }
-  ] };
-  if (url.includes('/daily/')) return { metadata, days: [0, 1].map(day => ({
-    forecastStartTime: `2026-10-${26 + day}T00:00+08:00`,
-    temperatureMax: { value: 24, unit: '°C' }, temperatureMin: { value: 10, unit: '°C' },
-    daytime: { condition: { code: '104', text: '阴' }, precipitation: { probability: 0.3 } },
-    nighttime: { condition: { code: '305', text: '雨' }, precipitation: { probability: 0.6 } },
-    astro: { sunrise: `2026-10-${26 + day}T06:00+08:00`, sunset: `2026-10-${26 + day}T18:00+08:00` }
-  })) };
-  throw new Error('Unexpected endpoint');
-}
 async function setup(t: TestContext, options: EnvironmentOptions = {}) {
   const env = installScriptable(t, { request: async url => payload(url), ...options });
   const service = await initializedContext(env);
@@ -209,6 +194,22 @@ test('QWeather caches across contexts, rounds location, serializes concurrent co
   assert.equal(requests.length, 3);
 });
 
+test('QWeather contains iCloud cache download failures and releases its host queue', async t => {
+  const { service, requests, cloud } = await setup(t, { iCloud: true });
+  service.fm = cloud;
+  await service.setupWeather();
+  const download = cloud.downloadFileFromiCloud;
+  cloud.downloadFileFromiCloud = async () => { throw new Error('iCloud offline'); };
+  await service.setupWeather();
+  assert.equal(service.data.weather?.currentTemp, null);
+  assert.ok(service.data.weatherError);
+  assert.equal(requests.length, 3);
+  cloud.downloadFileFromiCloud = download;
+  await service.setupWeather();
+  assert.equal(service.data.weather?.currentTemp, 20);
+  assert.equal(requests.length, 3);
+});
+
 test('QWeather rejects invalid hosts before sending a key, and missing credentials make no requests', async t => {
   const { service, requests, secrets } = await setup(t);
   for (const invalid of ['http://test.re.qweatherapi.com', 'test.re.qweatherapi.com.evil.test', 'test.re.qweatherapi.com@evil.test', 'test.re.qweatherapi.com/path', '']) {
@@ -325,43 +326,4 @@ test('QWeather stores the shared cooldown in local storage even with an iCloud l
   assert.equal(requests.length, 3);
   assert.equal(service.data.weather?.currentTemp, 20);
   assert([...cloud.store.keys()].some(path => path.startsWith('/cloud-library/weather-cal-qweather-cache')));
-});
-
-
-test('QWeather honors HTTP-date Retry-After and resumes only after the cooldown', async t => {
-  const base = Date.now();
-  const clock = vi.spyOn(Date, 'now').mockReturnValue(base);
-  t.onTestFinished(() => clock.mockRestore());
-  let limited = true;
-  const { service, requests } = await setup(t, { request: async (url, _kind, request) => {
-    if (limited) {
-      request.response = { statusCode: 429, headers: { 'retry-after': new Date(base + 3600000).toUTCString() } };
-      return { error: { status: 429 } };
-    }
-    return payload(url);
-  } });
-  await service.setupWeather();
-  limited = false;
-  clock.mockReturnValue(base + 3598000);
-  await service.setupWeather();
-  assert.equal(requests.length, 1);
-  clock.mockReturnValue(base + 3601000);
-  await service.setupWeather();
-  assert.equal(requests.length, 4);
-  assert.equal(service.data.weather?.currentTemp, 20);
-  assert.equal(service.data.weatherError, undefined);
-});
-
-test('QWeather monthly quota errors do not retry on the next day', async t => {
-  const base = Date.UTC(2026, 9, 26, 0);
-  const clock = vi.spyOn(Date, 'now').mockReturnValue(base);
-  t.onTestFinished(() => clock.mockRestore());
-  const { service, requests } = await setup(t, { request: async (_url, _kind, request) => {
-    request.response.statusCode = 429;
-    return { error: { status: 429, type: 'https://dev.qweather.com/docs/resource/error-code/#over-monthly-limit' } };
-  } });
-  await service.setupWeather();
-  clock.mockReturnValue(base + 86400000);
-  await service.setupWeather();
-  assert.equal(requests.length, 1);
 });
