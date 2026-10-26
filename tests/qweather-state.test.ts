@@ -154,3 +154,46 @@ test('response processing failures also start cooldown before another refresh', 
   assert.equal((await refresh()).ok, false);
   assert.equal(env.requests.length, 1);
 });
+
+test('HTTP-date Retry-After prevents refresh until the supplied time', async t => {
+  const base = Date.now();
+  const clock = vi.spyOn(Date, 'now').mockReturnValue(base);
+  t.onTestFinished(() => clock.mockRestore());
+  let limited = true;
+  const env = installScriptable(t, { request: async (_url, _kind, request) => {
+    if (limited) {
+      request.response = { statusCode: 429, headers: { 'retry-after': new Date(base + 3600000).toUTCString() } };
+      return { error: { status: 429 } };
+    }
+    return 'available';
+  } });
+  saveQWeatherCredentials('Widget', host, 'saved-key');
+  assert.equal((await refresh()).ok, false);
+  limited = false;
+  clock.mockReturnValue(base + 3598000);
+  assert.equal((await refresh()).ok, false);
+  assert.equal(env.requests.length, 1);
+  clock.mockReturnValue(base + 3601000);
+  assert.deepEqual(await refresh(), { ok: true, value: 'available' });
+  assert.equal(env.requests.length, 2);
+});
+
+test('monthly quota cooldown lasts until the next month with its safety margin', async t => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(Date.UTC(2026, 9, 26));
+  t.onTestFinished(() => { vi.useRealTimers(); });
+  const env = installScriptable(t, { request: async (_url, _kind, request) => {
+    request.response.statusCode = 429;
+    return { error: { status: 429, type: 'https://dev.qweather.com/docs/resource/error-code/#over-monthly-limit' } };
+  } });
+  saveQWeatherCredentials('Widget', host, 'saved-key');
+  assert.equal((await refresh()).ok, false);
+  vi.setSystemTime(Date.UTC(2026, 9, 27));
+  await refresh();
+  vi.setSystemTime(Date.UTC(2026, 10, 1));
+  await refresh();
+  assert.equal(env.requests.length, 1);
+  vi.setSystemTime(Date.UTC(2026, 10, 2));
+  await refresh();
+  assert.equal(env.requests.length, 2);
+});

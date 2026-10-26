@@ -169,6 +169,24 @@ are retained in the weather data but are not rendered as a widget footer.
 
 ### Request budget and failures
 
+The QWeather host-state module, `src/data/qweather-state.ts`, owns credential
+validation and persistence, the opaque cache namespace, same-host serialization,
+cooldown, backoff and authenticated request pacing. Setup uses
+`saveQWeatherCredentials`; it does not know credential names or cooldown paths.
+The provider loader in `src/data/qweather.ts` selects the weather cache, builds
+endpoint paths and interprets responses. Its cache recheck runs inside
+`withQWeatherState`, before `refresh` checks credentials or cooldown, so fresh
+cached weather remains usable without a key. A changed key retains the cache
+namespace and weather cache; a blank key keeps the entered host's saved key.
+Request processing and cache-write failures remain part of the refresh attempt.
+
+The state module uses Scriptable's existing runtime objects; tests substitute
+offline request and in-memory storage adapters at that internal seam.
+`tests/qweather-state.test.ts` exercises state transitions and request policy;
+`tests/weather-provider-setup.test.ts` checks setup-to-weather behavior. Saving
+credentials during an in-flight request retains the existing sequencing and
+does not provide transactional credential rotation.
+
 - Cold fetch: three sequential requests, spaced at least one second apart.
 - Weather and sunrise reuse a 15-minute cache keyed by provider, host, rounded
   coordinates, language and units. Concurrent consumers in the same script are
