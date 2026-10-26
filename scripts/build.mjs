@@ -12,13 +12,15 @@ const metadata = glyph => '// Variables used by Scriptable.\n// These must be at
  * @returns {Promise<Record<'one.js' | 'weather-cal-converter.js' | 'SHA256SUMS', string>>}
  */
 export async function buildArtifacts() {
-  const { version } = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8'));
+  const { version, devDependencies } = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8'));
   const license = (await fs.readFile(path.join(root, 'LICENSE'), 'utf8')).trim();
   const notice = `/* WeatherCal-Reborn ${version}\n${license}\n*/\n`;
-  const parserLicense = (await fs.readFile(path.join(root, 'node_modules/acorn/LICENSE'), 'utf8')).trim();
-  const parserNotice = `/* Acorn 8.18.0 (bundled JavaScript parser)\n${parserLicense}\n*/\n`;
-  const cldrLicense = (await fs.readFile(path.join(root, 'node_modules/cldr-core/LICENSE'), 'utf8')).trim();
-  const cldrNotice = `/* Unicode CLDR (bundled weather unit preferences)\n${cldrLicense}\n*/\n`;
+  const upstreamLicense = (await fs.readFile(path.join(root, 'licenses/weather-cal.LICENSE'), 'utf8')).trim();
+  const upstreamNotice = `/* Weather-Cal (mzeryck/Weather-Cal)\n${upstreamLicense}\n*/\n`;
+  const parserLicense = (await fs.readFile(path.join(root, 'licenses/acorn.LICENSE'), 'utf8')).trim();
+  const parserNotice = `/* Acorn ${devDependencies.acorn} (bundled JavaScript parser)\n${parserLicense}\n*/\n`;
+  const cldrLicense = (await fs.readFile(path.join(root, 'licenses/cldr-core.LICENSE'), 'utf8')).trim();
+  const cldrNotice = `/* Unicode CLDR ${devDependencies['cldr-core']} (bundled weather unit preferences)\n${cldrLicense}\n*/\n`;
   async function bundle(entry) {
     const result = await esbuild({
       absWorkingDir: root, entryPoints: [entry], bundle: true, platform: 'neutral', format: 'esm',
@@ -39,9 +41,10 @@ export async function buildArtifacts() {
   const engine = combined.slice(0, start) + combined.slice(finish + end.length);
   const artifacts = {
     'one.js': metadata('calendar') + '// WeatherCal: user begin v1\n' + user +
-      '// WeatherCal: user end v1\n// WeatherCal: engine begin v1\n' + notice + parserNotice + cldrNotice + engine +
+      '// WeatherCal: user end v1\n// WeatherCal: engine begin v1\n' + engine +
+      notice + upstreamNotice + parserNotice + cldrNotice +
       '// WeatherCal: engine end v1\n',
-    'weather-cal-converter.js': metadata('magic') + notice + await bundle('src/scriptable/converter.ts'),
+    'weather-cal-converter.js': metadata('magic') + await bundle('src/scriptable/converter.ts') + notice + upstreamNotice,
   };
   const SHA256SUMS = Object.entries(artifacts).map(([name, content]) =>
     `${createHash('sha256').update(content, 'utf8').digest('hex')}  ${name}`).join('\n') + '\n';
