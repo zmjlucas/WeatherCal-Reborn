@@ -6,13 +6,17 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createHash, randomUUID } from 'node:crypto';
 import { build } from './build.mjs';
-import { mergeScriptUpdate } from '../src/setup/script-format.ts';
+import { mergeScriptUpdate, splitScript } from '../src/setup/script-format.ts';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const exec = promisify(execFile);
 
 /** Keep the same validation and user-region preservation as the in-app updater. */
 export function prepareUpload(installed, fresh) {
+  if (installed === null) {
+    splitScript(fresh);
+    return fresh;
+  }
   return mergeScriptUpdate(installed, fresh);
 }
 
@@ -36,7 +40,7 @@ export async function upload(args = process.argv.slice(2)) {
     throw new Error('Usage: pnpm upload:icloud [--check | --probe | --help]');
   }
   if (args[0] === '--help') {
-    console.log('pnpm upload:icloud          Build, validate, back up and update WeatherCal-Test.js');
+    console.log('pnpm upload:icloud          Build and create WeatherCal-Test.js, or back up and update it');
     console.log('pnpm upload:icloud --check  Build and validate the merge without changing iCloud');
     console.log('pnpm upload:icloud --probe  Write/read/delete a temporary probe; leave the script alone');
     return;
@@ -44,7 +48,7 @@ export async function upload(args = process.argv.slice(2)) {
   const directory = path.join(os.homedir(), 'Library/Mobile Documents/iCloud~dk~simonbs~Scriptable/Documents');
   const target = path.join(directory, 'WeatherCal-Test.js');
   const current = await runNative(['inspect', target]);
-  if (!current.ubiquitous) throw new Error('Destination is not a confirmed iCloud document; refusing to update it.');
+  if (!current.ubiquitous) throw new Error('Destination is not a confirmed iCloud document or directory; refusing to write.');
   if (args[0] === '--probe') {
     await runNative(['probe', directory]);
     console.log('PASS: coordinated iCloud write/read/delete probe. Installed script untouched.');
@@ -53,28 +57,36 @@ export async function upload(args = process.argv.slice(2)) {
   const artifacts = await build();
   const replacement = prepareUpload(current.source, artifacts['one.js']);
   const hash = createHash('sha256').update(replacement).digest('hex');
-  console.log(`Validated fresh engine with installed metadata/layout/custom code preserved.\nTarget: ${target}\nCandidate SHA256: ${hash}`);
+  console.log(current.exists
+    ? 'Validated fresh engine with installed metadata/layout/custom code preserved.'
+    : 'Validated fresh standalone script for first installation.');
+  console.log(`Target: ${target}\nCandidate SHA256: ${hash}`);
   if (args[0] === '--check') {
     console.log('PASS: check only; no iCloud files changed. iPhone execution and delivery are not verified.');
     return;
   }
-  const backupDirectory = path.join(root, '.icloud-backups');
-  await fs.mkdir(backupDirectory, { recursive: true, mode: 0o700 });
-  const backupInfo = await fs.lstat(backupDirectory);
-  if (!backupInfo.isDirectory() || backupInfo.isSymbolicLink()) throw new Error('Backup directory must not be a symlink.');
-  await fs.chmod(backupDirectory, 0o700);
-  const backup = path.join(backupDirectory, `WeatherCal-Test-${new Date().toISOString().replace(/[:.]/g, '-')}-${randomUUID()}.js`);
   const staging = await fs.mkdtemp(path.join(os.tmpdir(), 'weathercal-upload-'));
   try {
-    const expected = path.join(staging, 'expected.js');
     const candidate = path.join(staging, 'candidate.js');
-    await fs.writeFile(expected, current.source, { mode: 0o600 });
     await fs.writeFile(candidate, replacement, { mode: 0o600 });
-    const result = await runNative(['update', target, expected, candidate, backup]);
-    if (result.status === 'unchanged') {
-      console.log('Already current; no script write or backup needed.');
+    if (!current.exists) {
+      await runNative(['create', target, candidate]);
+      console.log('PASS: new script created and exact readback verified. No previous script to back up.');
     } else {
-      console.log(`PASS: existing file updated and exact readback verified.\nBackup: ${backup}`);
+      const backupDirectory = path.join(root, '.icloud-backups');
+      await fs.mkdir(backupDirectory, { recursive: true, mode: 0o700 });
+      const backupInfo = await fs.lstat(backupDirectory);
+      if (!backupInfo.isDirectory() || backupInfo.isSymbolicLink()) throw new Error('Backup directory must not be a symlink.');
+      await fs.chmod(backupDirectory, 0o700);
+      const backup = path.join(backupDirectory, `WeatherCal-Test-${new Date().toISOString().replace(/[:.]/g, '-')}-${randomUUID()}.js`);
+      const expected = path.join(staging, 'expected.js');
+      await fs.writeFile(expected, current.source, { mode: 0o600 });
+      const result = await runNative(['update', target, expected, candidate, backup]);
+      if (result.status === 'unchanged') {
+        console.log('Already current; no script write or backup needed.');
+      } else {
+        console.log(`PASS: existing file updated and exact readback verified.\nBackup: ${backup}`);
+      }
     }
     console.log('iCloud sync is asynchronous; upload completion and iPhone widget execution are not verified.');
   } finally {

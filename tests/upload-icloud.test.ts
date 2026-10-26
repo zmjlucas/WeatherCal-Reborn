@@ -142,3 +142,63 @@ macTest('native writer restores the original bytes when an actual write exceeds 
   assert.equal(await fs.readFile(f.target, 'utf8'), installed);
   assert.equal(await fs.readFile(f.backup, 'utf8'), installed);
 });
+
+test('first upload uses the complete validated fresh bundle', () => {
+  assert.equal(prepareUpload(null, fresh), fresh);
+  assert.throws(() => prepareUpload(null, '<html>build failed</html>'));
+});
+
+macTest('missing script inspection allows creation without changing neighboring data', async t => {
+  const f = await fixture(t);
+  await fs.rm(f.target);
+  const before = await fs.readdir(f.directory);
+  const state = await runNative(['inspect', f.target]);
+  assert.equal(state.exists, false);
+  assert.equal(state.source, null);
+  assert.deepEqual(await fs.readdir(f.directory), before);
+  const result = await runNative(['create', f.target, f.candidate]);
+  assert.equal(result.status, 'created');
+  assert.equal(await fs.readFile(f.target, 'utf8'), await fs.readFile(f.candidate, 'utf8'));
+  assert.equal((await fs.stat(f.target)).mode & 0o777, 0o600);
+  assert.equal(await fs.readFile(f.expected, 'utf8'), installed);
+  await assert.rejects(fs.stat(f.backup), { code: 'ENOENT' });
+  assert.equal((await runNative(['inspect', f.target])).exists, true);
+});
+
+macTest('creation refuses a file that appeared after inspection, including dangling symlinks', async t => {
+  const f = await fixture(t);
+  await assert.rejects(runNative(['create', f.target, f.candidate]));
+  assert.equal(await fs.readFile(f.target, 'utf8'), installed);
+  await fs.rm(f.target);
+  await fs.symlink(path.join(f.directory, 'missing'), f.target);
+  await assert.rejects(runNative(['inspect', f.target]), /regular|symbolic/i);
+  await assert.rejects(runNative(['create', f.target, f.candidate]));
+  assert.equal((await fs.lstat(f.target)).isSymbolicLink(), true);
+  await assert.rejects(fs.stat(path.join(f.directory, 'missing')), { code: 'ENOENT' });
+});
+
+macTest('missing parent directory is not mistaken for a new Scriptable installation', async t => {
+  const f = await fixture(t);
+  const absent = path.join(f.directory, 'missing', 'WeatherCal-Test.js');
+  await assert.rejects(runNative(['inspect', absent]));
+  await assert.rejects(runNative(['create', absent, f.candidate]));
+  await assert.rejects(fs.stat(path.dirname(absent)), { code: 'ENOENT' });
+});
+
+macTest('failed creation removes its partial file so a later upload can retry', async t => {
+  const f = await fixture(t);
+  const exec = promisify(execFile);
+  const binary = path.join(f.directory, 'native-writer');
+  await exec('/usr/bin/swiftc', ['-module-cache-path', 'node_modules/.cache/weathercal-swift', 'scripts/icloud-file.swift', '-o', binary]);
+  await fs.rm(f.target);
+  await fs.writeFile(f.candidate, 'x'.repeat(8192));
+  await assert.rejects(exec('/bin/bash', ['-c', 'trap "" XFSZ; ulimit -f 1; exec "$@"', 'bash',
+    binary, 'create', f.target, f.candidate]), (error: unknown) => {
+    assert(error instanceof Error && 'code' in error);
+    assert.equal(error.code, 1); // Native helper handled the error instead of dying from SIGXFSZ.
+    return true;
+  });
+  await assert.rejects(fs.stat(f.target), { code: 'ENOENT' });
+  await fs.writeFile(f.candidate, fresh);
+  assert.equal((await runNative(['create', f.target, f.candidate])).status, 'created');
+});

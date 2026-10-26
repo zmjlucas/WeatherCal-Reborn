@@ -1,11 +1,11 @@
-# Update the existing iCloud test widget
+# Install or update the iCloud test widget
 
 From this checkout on a Mac with iCloud Drive and Scriptable enabled:
 
 ```sh
 pnpm upload:icloud --probe  # Temporary write/read/delete test; does not update the widget
 pnpm upload:icloud --check  # Fresh build and merged-source validation; does not write to iCloud
-pnpm upload:icloud          # Fresh build, backup, then update the installed test widget
+pnpm upload:icloud          # Fresh build, then create the script or back up and update it
 ```
 
 Use the repository's pinned Node/pnpm versions and install its dependencies first. The macOS Swift toolchain (`/usr/bin/swift`, supplied with Xcode Command Line Tools) is also required. The first invocation may take longer while Swift populates its module cache. Terminal/Codex must have permission to access iCloud Drive. A sandbox denial is not evidence that iCloud itself is unavailable.
@@ -16,21 +16,21 @@ The destination is always:
 ~/Library/Mobile Documents/iCloud~dk~simonbs~Scriptable/Documents/WeatherCal-Test.js
 ```
 
-The installed file must already exist and be a downloaded, recognizable WeatherCal-Reborn standalone script. If it is not locally available, open it in Finder/Scriptable and allow iCloud to download it before retrying. The command refuses legacy dual-file installations and will not create or rename a script. Ordinary `pnpm build` and `pnpm check` never upload anything.
+The Scriptable iCloud directory must already exist. If WeatherCal-Test.js is absent, the command validates and installs the complete fresh `dist/one.js`, including its default layout and custom section. No backup is needed for a first installation. If the file exists, it must be a downloaded, recognizable WeatherCal-Reborn standalone script; the command preserves its editable sections and backs it up before updating. If an existing iCloud file is not locally available, open it in Finder/Scriptable and allow iCloud to download it before retrying. The command refuses legacy dual-file installations and never renames an existing script. Ordinary `pnpm build` and `pnpm check` never upload anything.
 
 ## What the update preserves
 
 The uploader rebuilds `dist/one.js` from this checkout. It uses the same `mergeScriptUpdate` implementation as the in-app updater: the installed Scriptable metadata, layout, and custom code remain byte-for-byte; only the generated engine is replaced. Edits to `src/user.ts` therefore do not reset an already installed widget's layout. Edit the installed user section deliberately if you want to change that layout. The merged file can have a different hash from `dist/one.js`, which is expected.
 
-The script keeps its name and path. The native writer uses Foundation `NSFileCoordinator` and writes to the existing file without deleting or renaming it. It checks the expected old contents again inside the coordinated write and rejects a concurrent change. Missing files, symlinks, hard links, unresolved/unknown iCloud conflict state, invalid source, and failed backups abort before the target write.
+The script keeps its name and path. The native writer uses Foundation `NSFileCoordinator` and writes to the existing file without deleting or renaming it. It checks the expected old contents again inside the coordinated write and rejects a concurrent change. Symlinks, hard links, unresolved/unknown iCloud conflict state, invalid source, and failed backups abort before the target write. First installation uses exclusive creation inside file coordination: if a file arrives after inspection, the command fails without overwriting it. A detected creation failure removes its own incomplete file so the next invocation can retry. Both `--check` and `--probe` work before the first installation; neither installs the script.
 
 The uploader does not access the Scriptable Library directory, preferences, background images, caches, or Keychain. In the inspected installed and current engines, preferences and appearance still use `weather-cal-preferences-WeatherCal-Test` and `weather-cal-WeatherCal-Test`; background images still use `Weather Cal/WeatherCal-Test.jpg` and `Weather Cal/WeatherCal-Test (Dark).jpg`. Retaining `Script.name()` preserves these lookups. Updating the engine can change its behavior; the upload mechanism cannot guarantee that all future engine versions are data-compatible.
 
 ## Backups and failures
 
-Before a changed script is written, its exact old bytes are saved under `.icloud-backups/` in this checkout. That directory is Git-ignored, permission 0700; backups are permission 0600 and are never uploaded automatically. Keep these backups if you archive or delete the checkout. They may contain private custom code.
+Before an existing script is changed, its exact old bytes are saved under `.icloud-backups/` in this checkout. That directory is Git-ignored, permission 0700; backups are permission 0600 and are never uploaded automatically. Keep these backups if you archive or delete the checkout. They may contain private custom code.
 
-The writer verifies exact readback. On a detected write/readback failure it attempts to restore the original bytes and reports whether restoration succeeded. The existing file identity is retained, so writing is not an atomic rename: termination, power loss, disk errors, or a program ignoring file coordination can still interrupt it. A durable backup is created before the first mutation. If recovery is needed, open the backup, copy its complete contents into the **existing** WeatherCal-Test script in Scriptable, and save without changing the script name. Do not delete/recreate the Home Screen widget or reset Scriptable storage.
+The writer verifies exact readback. On a detected write/readback failure it attempts to restore the original bytes and reports whether restoration succeeded. The existing file identity is retained, so writing is not an atomic rename: termination, power loss, disk errors, or a program ignoring file coordination can still interrupt it. For updates, a durable backup is created before the first mutation. New installations have no previous script to restore. If recovery is needed, open the backup, copy its complete contents into the **existing** WeatherCal-Test script in Scriptable, and save without changing the script name. Do not delete/recreate the Home Screen widget or reset Scriptable storage.
 
 ## What is and is not validated
 
