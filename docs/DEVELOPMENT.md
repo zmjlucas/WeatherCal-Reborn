@@ -81,7 +81,7 @@ The optional `dist/weather-cal-converter.js` converts a conventional single-List
 - `src/widget.ts`, `src/layout/`: widget lifecycle, backgrounds and both layout syntaxes.
 - `src/core/`: formatting, symbols/drawing, gradients, prompts and storage.
 - `src/preferences/`: independent schema categories, persistence and editor UI.
-- `src/data/`: calendar/reminder filters, location, weather/sun and feed transports.
+- `src/data/`: calendar/reminder filters, location and weather/sun transports.
 - `src/items/`: rendering, independent of request/persistence implementations.
 - `src/setup/`: onboarding, menus, background selection and distribution.
 - `src/create.ts`, `src/index.ts`: compatibility composition and optional context factory.
@@ -110,7 +110,7 @@ After installing the widget and optional converter, verify these device-dependen
 - Light/dark solid and gradient backgrounds; both image appearances; custom background.
 - Calendar/reminder permissions, selected lists, all-day/ongoing events, overdue reminders.
 - OpenWeather key/subscription, correct units/locality, forecast and sunrise times; cached offline rendering.
-- Custom item overrides, text/SF Symbols, battery/charging, greetings, week and feeds.
+- Custom item overrides, text/SF Symbols, battery/charging, greetings and week.
 - Edit every preference type; duplicate and rename scripts; export/import custom source and images.
 - iCloud hydration; update preserves script; reset preserves other widgets.
 

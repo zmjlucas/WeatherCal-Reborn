@@ -1,6 +1,6 @@
 # Feature coverage
 
-Compatibility reference: the project linked in the [README credits](../README.md#credits), revision `5a83840781f94353a3c1f6562e79c9b15a17665e`, audited on 2026-09-08. All 71 callable engine methods, the enum object, and all 101 original preference descriptors are retained. `covid.apiUrl` adds a compatible statistics endpoint override. The inert upstream diagnostic footer is not included.
+Upstream reference: the project linked in the [README credits](../README.md#credits), revision `5a83840781f94353a3c1f6562e79c9b15a17665e`, audited on 2026-09-08. The supported features and customization interfaces are listed below. The inert upstream diagnostic footer is not included.
 
 | Feature | Implementation | Behavioral coverage |
 | --- | --- | --- |
@@ -13,18 +13,17 @@ Compatibility reference: the project linked in the [README credits](../README.md
 | Current/future weather, daily/hourly forecasts, rain, high/low bar, sunrise/sunset | `src/items/weather.ts`, `forecast.ts`, `sun.ts`, `src/data/weather.ts` | item/data/core tests |
 | QWeather default, provider switching, secure QWeather keys, rate cooldown | `src/data/qweather.ts`, `qweather-response.ts`, `src/setup/weather-provider.ts` | QWeather and provider setup tests |
 | Battery level/charging, ISO week, text and SF Symbols | `src/items/basic.ts`, `src/core/drawing.ts` | item/core tests |
-| RSS/Atom news, dates, links, COVID numeric tokens | `src/items/feeds.ts`, `src/data/feeds.ts` | item/data tests |
 | Location/reverse geocoding, locale/units, API versions, bounded cache fallback | `src/data/`, `src/core/storage.ts` | data/core tests |
 | Custom helper API, formatting, capitalization, fonts, colors and icon tint | `src/core/`, `src/create.ts` | core and integration tests |
 | Converter companion script | `src/converter.ts`, `src/converter/tokens.ts`, `src/scriptable/converter.ts` | converter/build tests |
 
-The 17 content item names are `date`, `greeting`, `events`, `reminders`, `current`, `future`, `forecast`, `daily`, `hourly`, `sunrise`, `sunset`, `covid`, `text`, `battery`, `week`, `symbol`, and `news`. `forecast`/`daily` are aliases; sunrise/sunset remain automatic unless their separate-elements preference is enabled. Layout directives include `row`, `column`, `space`, `left`, `right`, and `center`; alignment helpers remain exposed to custom code.
+The 15 content item names are `date`, `greeting`, `events`, `reminders`, `current`, `future`, `forecast`, `daily`, `hourly`, `sunrise`, `sunset`, `text`, `battery`, `week`, and `symbol`. `forecast`/`daily` are aliases; sunrise/sunset remain automatic unless their separate-elements preference is enabled. Layout directives include `row`, `column`, `space`, `left`, `right`, and `center`; alignment helpers remain exposed to custom code.
 
-All original preference categories remain: widget, localization, font, date, events, reminders, sunrise, weather, covid, symbol and news. Existing category/item names remain compatible. The new weather provider preference defaults to QWeather.
+The preference categories are widget, localization, font, date, events, reminders, sunrise, weather and symbol. The weather provider preference defaults to QWeather.
 
 ## Correctness changes
 
-The refactor fixes undeclared loop variables, partial/corrupt settings, asynchronous permission handling, same-name storage switching, stale per-render state, missing custom-background files, nested layout parameters and unclosed ASCII rows. Events include the whole final requested day, including today when zero future days are selected. Forecast reads are bounded; missing weather and equal temperature bounds produce valid placeholders/drawing geometry. Reminder fonts, disabled tap links, zero statistics, optional symbol settings and missing news dates are handled correctly.
+The refactor fixes undeclared loop variables, partial/corrupt settings, asynchronous permission handling, same-name storage switching, stale per-render state, missing custom-background files, nested layout parameters and unclosed ASCII rows. Events include the whole final requested day, including today when zero future days are selected. Forecast reads are bounded; missing weather and equal temperature bounds produce valid placeholders/drawing geometry. Reminder fonts, disabled tap links and optional symbol settings are handled correctly.
 
 Export/import preserves exact script code, punctuation and custom functions, and embeds both background images. Update failures preserve installed code. Reset touches only the selected widget. The font editor preserves drafts when changing capitalization. The converter preserves surrounding syntax, quoted code examples and dollar-prefixed identifiers.
 
@@ -32,12 +31,10 @@ Export/import preserves exact script code, punctuation and custom functions, and
 
 The existing `weather-cal-<name>`, `weather-cal-preferences-<name>`, `weather-cal-api-key`, `weather-cal-api-path`, `weather-cal-setup`, `weather-cal-location`, and `Weather Cal/<name>.jpg` conventions remain.
 
-Weather/sun caches include provider, coordinates, units and locale in their identity; QWeather also includes a random host-specific namespace, with the host mapping kept in Keychain. News caches use the full feed URL, while COVID caches include endpoint and country. Hashed bounded filenames and an identity field prevent cross-widget contamination. Old unscoped weather/COVID caches and URL-named news caches remain untouched but are not reused because their settings cannot be established. The first refactored run needs a network fetch for those caches; old preferences and location are preserved.
+Weather/sun caches include provider, coordinates, units and locale in their identity; QWeather also includes a random host-specific namespace, with the host mapping kept in Keychain. Hashed bounded filenames and an identity field prevent cross-widget contamination. Old unscoped weather caches remain untouched but are not reused because their settings cannot be established. The first refactored run needs a network fetch for those caches; old preferences and location are preserved.
 
 ## External service boundaries
 
 Weather uses QWeather by default, with OpenWeather selectable. QWeather runtime requires a dedicated API Host and API Key; tests use only synthetic credentials and simulated current/hourly/daily and error responses, with no live API requests or quota usage. OpenWeather requires access to One Call; its existing 3.0 and legacy 2.5 validation behavior is retained and tested with fixtures. Neither provider was tested on an iPhone in this change. See [weather setup and rate handling](DEVELOPMENT.md#weather-providers).
-
-The original COVID Heroku endpoint returned 404 during this audit. The default replacement uses the compatible [disease.sh endpoint implementation](https://github.com/disease-sh/API/blob/master/routes/v3/covid-19/apiWorldometers.js), with an optional full endpoint override in preferences. The default Worldometer source stopped updating on **April 13, 2024**, so this item displays historical statistics, not current surveillance. Live access to disease.sh could not be verified from this environment (HTTP 403). See [Worldometer's source notice](https://www.worldometers.info/coronavirus/).
 
 Provider failures use bounded recent caches where available. Widgets can render placeholders without network access. Actual Scriptable device behavior still needs the acceptance steps in [DEVELOPMENT.md](DEVELOPMENT.md).
