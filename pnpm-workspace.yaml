@@ -1,5 +1,4 @@
 engineStrict: true
-reporter: silent
 strictPeerDependencies: true
 savePrefix: ''
 enableGlobalVirtualStore: false
