@@ -137,6 +137,7 @@ export interface WeatherCalContext extends WidgetState {
   reminders(column: WidgetStack): Promise<void | WidgetText>;
   current(column: WidgetStack): Promise<void>;
   future(column: WidgetStack): Promise<void>;
+  rain(column: WidgetStack): Promise<void>;
   forecast(column: WidgetStack, hourly?: boolean): Promise<void>;
   daily(column: WidgetStack): Promise<void>;
   hourly(column: WidgetStack): Promise<void>;

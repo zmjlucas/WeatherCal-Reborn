@@ -197,6 +197,57 @@ The current API-Key policy has differing future limit dates in official pages;
 this adapter implements API Key authentication, not JWT signing. Verify the
 account's limits when configuring a deployment.
 
+### Near-term rain item
+
+Add `rain` to the editable `layout` in your installed script, preferably in a
+wide column or its own row, for example:
+
+```text
+row
+  column
+    rain
+```
+
+Keep your other layout items. Existing layouts and the default layout are not
+rewritten; without `rain`, the widget makes no minutely requests. The item is
+independent of **Show percent chance of rain** and the switch to Tomorrow.
+It requires QWeather selected in Weather preferences and the same configured
+API Host/Key as regular weather; OpenWeather shows a requires-QWeather message.
+
+The item requests [`/v7/minutely/5m`](https://dev.qweather.com/docs/api/minutely/minutely-precipitation/),
+which covers China with five-minute precipitation amounts for the next two
+hours. It shows approximate absolute times, such as `Rain expected around 14:35`
+or `Rain expected to stop around 15:10`, plus the provider's update time and a
+QWeather source link. Fully dry/wet sequences show the actual end of the
+available forecast window. Snow is labeled separately; mixed rain/snow is
+described as precipitation. Timing is derived from positive five-minute bins,
+not from hourly probabilities or a promise of exact rain timing.
+
+Chinese weather language (or Chinese device/widget locale when unset) produces
+Chinese messages; other languages use English, following the endpoint's
+[Chinese/English language coverage](https://dev.qweather.com/docs/resource/language/).
+There is no static minute countdown to become misleading between iOS refreshes.
+
+Minutely data has a separate cache, refreshed after five minutes when the script
+runs. Cached data is usable only while both its file age and provider update age
+are at most 15 minutes and its time series covers the current time. A cached dry
+forecast never becomes a new two-hour forecast. Missing/invalid/gapped data,
+unsupported coverage, denied access and expired offline data show unavailable.
+The widget requests another refresh after five minutes without postponing an
+earlier requested refresh; [iOS controls the actual refresh time](https://docs.scriptable.app/listwidget/#refreshafterdate).
+
+Current/hourly/daily weather and minutely requests share host sequencing,
+one-second pacing and 429 cooldown, including legacy body-level 429 errors.
+Other minutely failures have their own persistent cooldown so they do not block
+ordinary weather. The same retry/backoff rules apply. Cache identities contain
+account scope, location and language; cache files contain no API key or account
+host. Enabling this item adds at most one minutely request per five-minute cache
+refresh for that identity, subject to errors, account limits and iOS scheduling.
+
+Run `pnpm exec vitest run tests/rain-data.test.ts tests/rain-item.test.ts tests/qweather.test.ts`.
+These are simulated-response tests only. Device typography, live minutely API
+access and real-world prediction accuracy have not been verified.
+
 ### Historical manual verification on 2026-10-26
 
 This records a one-off check performed before the simulated-response-only testing

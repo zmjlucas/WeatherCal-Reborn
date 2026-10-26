@@ -56,7 +56,8 @@ export async function withQWeatherSession<T>(host: string, scope: string, work: 
     } catch (cause) {
       if (!activeRequest) throw cause; // Cache reads, missing credentials and active cooldowns do not extend retries.
       status ??= activeRequest.response?.statusCode;
-      const failures = finiteNumber(failure.failures) ? Math.min(failure.failures + 1, 6) : 1;
+      const previousFailures = (status === 429 ? rate : failure).failures;
+      const failures = finiteNumber(previousFailures) ? Math.min(previousFailures + 1, 6) : 1;
       let retryAt = Date.now() + Math.min(retryInterval * 2 ** (failures - 1), 6 * 60 * 60 * 1000);
       for (const [name, header] of Object.entries(activeRequest.response?.headers || {})) {
         if (name.toLowerCase() !== 'retry-after' || typeof header !== 'string') continue;

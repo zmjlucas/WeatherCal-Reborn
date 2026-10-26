@@ -12,12 +12,13 @@ Upstream reference: the project linked in the [README credits](../README.md#cred
 | Date sizes, greetings, events, reminders, calendar/list colors, empty-state behavior, deep links | `src/items/calendar.ts`, `basic.ts`, `src/data/agenda.ts` | item and data tests |
 | Current/future weather, daily/hourly forecasts, rain, high/low bar, sunrise/sunset | `src/items/weather.ts`, `forecast.ts`, `sun.ts`, `src/data/weather.ts` | item/data/core tests |
 | QWeather default, provider switching, secure QWeather keys, rate cooldown | `src/data/qweather.ts`, `qweather-response.ts`, `src/setup/weather-provider.ts` | QWeather and provider setup tests |
+| Near-term precipitation start/stop times, bounded dry/ongoing forecasts, rain/snow distinction and update time | `src/data/rain.ts`, `rain-response.ts`, `src/items/rain.ts` | rain data and item tests |
 | Battery level/charging, ISO week, text and SF Symbols | `src/items/basic.ts`, `src/core/drawing.ts` | item/core tests |
 | Location/reverse geocoding, locale/units, API versions, bounded cache fallback | `src/data/`, `src/core/storage.ts` | data/core tests |
 | Custom helper API, formatting, capitalization, fonts, colors and icon tint | `src/core/`, `src/create.ts` | core and integration tests |
 | Converter companion script | `src/converter.ts`, `src/converter/tokens.ts`, `src/scriptable/converter.ts` | converter/build tests |
 
-The 15 content item names are `date`, `greeting`, `events`, `reminders`, `current`, `future`, `forecast`, `daily`, `hourly`, `sunrise`, `sunset`, `text`, `battery`, `week`, and `symbol`. `forecast`/`daily` are aliases; sunrise/sunset remain automatic unless their separate-elements preference is enabled. Layout directives include `row`, `column`, `space`, `left`, `right`, and `center`; alignment helpers remain exposed to custom code.
+The 16 content item names are `date`, `greeting`, `events`, `reminders`, `current`, `future`, `rain`, `forecast`, `daily`, `hourly`, `sunrise`, `sunset`, `text`, `battery`, `week`, and `symbol`. `forecast`/`daily` are aliases; sunrise/sunset remain automatic unless their separate-elements preference is enabled. `rain` is an opt-in QWeather short-term precipitation item, independent of the rain percentage setting and the next-hour/tomorrow switch. Layout directives include `row`, `column`, `space`, `left`, `right`, and `center`; alignment helpers remain exposed to custom code.
 
 The preference categories are widget, localization, font, date, events, reminders, sunrise, weather and symbol. The weather provider preference defaults to QWeather.
 
@@ -38,3 +39,5 @@ Weather/sun caches include provider, coordinates, units and locale in their iden
 Weather uses QWeather by default, with OpenWeather selectable. QWeather runtime requires a dedicated API Host and API Key; tests use only synthetic credentials and simulated current/hourly/daily and error responses, with no live API requests or quota usage. OpenWeather requires access to One Call; its existing 3.0 and legacy 2.5 validation behavior is retained and tested with fixtures. Neither provider was tested on an iPhone in this change. See [weather setup and rate handling](DEVELOPMENT.md#weather-providers).
 
 Provider failures use bounded recent caches where available. Widgets can render placeholders without network access. Actual Scriptable device behavior still needs the acceptance steps in [DEVELOPMENT.md](DEVELOPMENT.md).
+
+The `rain` item uses QWeather's China-only, five-minute precipitation forecast for the next two hours. It derives approximate absolute event times from positive five-minute amounts, distinguishes snow and mixed precipitation, and includes the provider update time. Invalid, missing or stale data displays unavailable rather than clear weather. Tests use synthetic minutely responses; no live minutely API call or iPhone validation has been performed. See [rain item usage](DEVELOPMENT.md#near-term-rain-item).

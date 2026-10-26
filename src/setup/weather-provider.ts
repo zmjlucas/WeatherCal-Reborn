@@ -38,8 +38,11 @@ export default {
       Keychain.set('weather-cal-qweather-host:' + this.name, host);
       if (key !== previous) {
         const files = FileManager.local();
-        const ratePath = files.joinPath(files.libraryDirectory(), dataCacheFilename('qweather-rate', qweatherCacheScope(host)));
-        if (files.fileExists(ratePath)) files.remove(ratePath);
+        const scope = qweatherCacheScope(host);
+        for (const prefix of ['qweather-rate', 'qweather-minutely-rate']) {
+          const ratePath = files.joinPath(files.libraryDirectory(), dataCacheFilename(prefix, scope));
+          if (files.fileExists(ratePath)) files.remove(ratePath);
+        }
       }
     } else if (!(await this.getWeatherKey(firstRun))) return false;
 
@@ -54,6 +57,7 @@ export default {
     }
     delete this.data.weather;
     delete this.data.sun;
+    delete this.data.rain;
     delete this.data.weatherAttributions;
     delete this.data.weatherError;
     if (provider === 'qweather') await this.generateAlert('QWeather settings saved. Weather will load when you preview the widget.', [firstRun ? 'Continue' : 'OK']);

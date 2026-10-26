@@ -174,6 +174,16 @@ test('legacy body 429 shares cooldown with basic weather across contexts', async
   assert.equal(requests.length, 1);
 });
 
+test('consecutive minutely 429 responses increase the shared retry delay', async t => {
+  const { service, requests } = await rainContext(t, { request: async () => ({ code: '429' }) });
+  for (const [minutes, count] of [[0, 1], [16, 2], [32, 2], [47, 3], [78, 3], [108, 4]] as const) {
+    service.now = new Date(rainNow + minutes * 60000);
+    vi.setSystemTime(service.now);
+    await service.setupRain();
+    assert.equal(requests.length, count, `at minute ${minutes}`);
+  }
+});
+
 test('OpenWeather, missing credentials and invalid coordinates make no minutely requests', async t => {
   const { service, requests, secrets } = await rainContext(t);
   service.settings.weather.provider = 'openweather';
@@ -186,4 +196,20 @@ test('OpenWeather, missing credentials and invalid coordinates make no minutely 
   await service.setupRain();
   assert.equal(requests.length, 0);
   assert.equal(service.data.rain?.outlook, null);
+});
+
+test('saving a changed key clears minutely cooldown while re-saving the same key retains it', async t => {
+  const { service, requests } = await rainContext(t, {
+    responses: [0, { fields: [rainHost, 'fake-rain-key'] }, 0, 0, { fields: [rainHost, 'corrected-key'] }, 0],
+    request: async (_url, _kind, req) => req.headers['X-QW-Api-Key'] === 'corrected-key' ? rainPayload() : { code: '403' }
+  });
+  await service.setupRain();
+  assert.equal(await service.selectWeatherProvider(), true);
+  await service.setupRain();
+  assert.equal(requests.length, 1);
+  assert.equal(await service.selectWeatherProvider(), true);
+  assert.equal('rain' in service.data, false);
+  await service.setupRain();
+  assert.equal(requests.length, 2);
+  assert.equal(service.data.rain?.outlook?.state, 'starts');
 });
