@@ -2,7 +2,6 @@ import { parseBackground } from "./types/background";
 import type { Background } from "./types/background";
 import type { LayoutInput, CustomItems } from "./types/context";
 import type { WeatherCalContext } from "./types/context";
-// Licensed under MIT. See LICENSE.
 
 export default {
   initialize(this: WeatherCalContext, name: string, iCloudInUse: boolean): void {

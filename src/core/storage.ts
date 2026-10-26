@@ -1,5 +1,4 @@
 import type { WeatherCalContext } from "../types/context";
-// Licensed under MIT. See LICENSE.
 
 export default {
   writePreference(this: WeatherCalContext, name: string | null, value: unknown, inputPath: string | null = null): void {

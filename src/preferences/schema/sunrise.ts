@@ -1,5 +1,3 @@
-// Licensed under MIT. See LICENSE.
-
 import type { WeatherCalContext } from '../../types/context';
 import type { EditingCategory, GetCalendars, SunriseSettings } from '../../types/settings';
 

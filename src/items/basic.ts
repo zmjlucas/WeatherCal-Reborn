@@ -1,6 +1,5 @@
 import type { LocalizationSettings } from "../types/settings";
 import type { WeatherCalContext } from "../types/context";
-// Licensed under MIT. See LICENSE.
 // Local items render greetings, custom text, battery level, ISO week, and SF Symbols.
 
 export default {

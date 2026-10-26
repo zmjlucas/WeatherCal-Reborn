@@ -1,5 +1,3 @@
-// Licensed under MIT. See LICENSE.
-
 import { qweatherLanguages } from '../../data/qweather-locale';
 import type { WeatherCalContext } from '../../types/context';
 import type { EditingCategory, GetCalendars, WeatherSettings } from '../../types/settings';

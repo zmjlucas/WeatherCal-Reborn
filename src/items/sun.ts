@@ -1,5 +1,4 @@
 import type { WeatherCalContext } from "../types/context";
-// Licensed under MIT. See LICENSE.
 // Sun items consume sunrise, sunset, and tomorrow timestamps in milliseconds.
 
 export default {

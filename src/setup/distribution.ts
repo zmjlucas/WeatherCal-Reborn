@@ -1,5 +1,3 @@
-// Licensed under MIT. See LICENSE.
-
 import type { WeatherCalContext } from '../types/context';
 import { parseBackground } from '../types/background';
 import { mergeScriptUpdate, splitScript } from './script-format';

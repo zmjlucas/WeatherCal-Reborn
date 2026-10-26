@@ -1,4 +1,3 @@
-// Licensed under MIT. See LICENSE.
 import { createWeatherCal } from './create';
 import { layout, custom } from './user';
 

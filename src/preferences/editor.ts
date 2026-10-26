@@ -1,4 +1,3 @@
-// Licensed under MIT. See LICENSE.
 import type { WeatherCalContext } from '../types/context';
 import type { CalendarReference, EditableCategory } from '../types/settings';
 

@@ -1,4 +1,3 @@
-// Licensed under MIT. See LICENSE.
 import type { WeatherCalContext } from '../types/context';
 import { parseLocation } from '../types/data';
 import { finiteNumber, record } from '../types/json';

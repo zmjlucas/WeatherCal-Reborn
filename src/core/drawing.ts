@@ -1,5 +1,4 @@
 import type { WeatherCalContext } from "../types/context";
-// Licensed under MIT. See LICENSE.
 
 export default {
   provideBatteryIcon(this: WeatherCalContext, batteryLevel: number, charging = false): Image {

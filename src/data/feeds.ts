@@ -1,5 +1,3 @@
-// Licensed under MIT. See LICENSE.
-
 import type { WeatherCalContext } from '../types/context';
 import { parseCovid, parseNews } from '../types/data';
 import type { NewsListing } from '../types/data';

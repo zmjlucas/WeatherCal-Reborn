@@ -1,5 +1,4 @@
 import type { WeatherCalContext } from "../types/context";
-// Licensed under MIT. See LICENSE.
 // Calendar items consume normalized events and reminders from the data modules.
 
 export default {

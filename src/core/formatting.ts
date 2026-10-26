@@ -1,7 +1,6 @@
 import type { ColorFormat, WidgetContainer } from "../types/rendering";
 import type { FontFormat } from "../types/settings";
 import type { WeatherCalContext } from "../types/context";
-// Licensed under MIT. See LICENSE.
 
 export default {
   displayNumber(this: WeatherCalContext, number: number | null | undefined, dummy = "-"): string { return (number == null ? dummy : Math.round(number).toString()) },

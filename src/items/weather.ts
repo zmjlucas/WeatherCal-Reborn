@@ -1,5 +1,4 @@
 import type { WeatherCalContext } from "../types/context";
-// Licensed under MIT. See LICENSE.
 // Current and upcoming weather preserve the public helper context used by custom items.
 
 export default {

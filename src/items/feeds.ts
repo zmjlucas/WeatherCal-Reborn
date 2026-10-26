@@ -1,5 +1,4 @@
 import type { WeatherCalContext } from "../types/context";
-// Licensed under MIT. See LICENSE.
 // Feed items render normalized news and COVID data with localized formatting.
 
 export default {

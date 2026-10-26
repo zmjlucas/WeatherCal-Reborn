@@ -1,4 +1,3 @@
-// Licensed under MIT. See LICENSE.
 import { convertWidget } from '../converter';
 import type { ConverterOptions } from '../converter';
 

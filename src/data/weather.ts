@@ -1,5 +1,3 @@
-// Licensed under MIT. See LICENSE.
-
 import { loadQWeather } from './qweather';
 import { qweatherLocale } from './qweather-locale';
 import { resolveWeatherUnits } from './weather-units';

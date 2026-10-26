@@ -1,5 +1,4 @@
 import type { WeatherCalContext } from "../types/context";
-// Licensed under MIT. See LICENSE.
 // Daily and hourly forecasts share layout rules while bounding reads to available data.
 
 export default {

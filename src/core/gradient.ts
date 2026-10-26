@@ -1,6 +1,5 @@
 import type { GradientSettings } from "../types/rendering";
 import type { WeatherCalContext } from "../types/context";
-// Licensed under MIT. See LICENSE.
 
 export default {
   async setupGradient(this: WeatherCalContext): Promise<GradientSettings> {

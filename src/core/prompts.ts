@@ -1,5 +1,4 @@
 import type { WeatherCalContext } from '../types/context';
-// Licensed under MIT. See LICENSE.
 
 type PromptValue = string | number | boolean | null | undefined;
 

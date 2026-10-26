@@ -1,6 +1,5 @@
 import type { WeatherCalContext } from '../types/context';
 import type { WidgetContainer } from '../types/rendering';
-// Licensed under MIT. See LICENSE.
 
 export default {
   async executeItem(this: WeatherCalContext, item: string): Promise<void> {

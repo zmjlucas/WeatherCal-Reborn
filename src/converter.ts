@@ -1,4 +1,3 @@
-// Licensed under MIT. See LICENSE.
 import { tokenize } from './converter/tokens';
 
 export interface ConverterOptions { parameter?: string; padding?: number; cornerRadius?: number }

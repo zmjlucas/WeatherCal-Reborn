@@ -1,4 +1,3 @@
-// Licensed under MIT. See LICENSE.
 import { parse } from 'acorn';
 import type { AnyNode, Comment, Pattern } from 'acorn';
 
