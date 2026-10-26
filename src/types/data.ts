@@ -21,9 +21,6 @@ export interface WeatherData {
 }
 export interface SunData { sunrise: number | null; sunset: number | null; tomorrow: number | null }
 export interface LocationData { latitude?: number; longitude?: number; locality?: string | null; cacheExpired?: boolean }
-export interface NewsListing { title: string; link: string; date: string | null }
-/** COVID tokens intentionally support additional numeric provider fields. */
-export type CovidData = Record<string, number>;
 export interface WidgetData {
   weatherError?: string;
   weatherAttributions?: string[];
@@ -32,8 +29,6 @@ export interface WidgetData {
   sun?: SunData;
   events?: CalendarEvent[];
   reminders?: Reminder[];
-  news?: NewsListing[];
-  covid?: CovidData;
 }
 
 function weatherConditions(value: unknown): WeatherCondition[] | undefined {
@@ -92,23 +87,4 @@ export function parseLocation(value: unknown): LocationData | null {
   if (typeof locality === 'string' || locality === null) location.locality = locality;
   if (typeof cacheExpired === 'boolean') location.cacheExpired = cacheExpired;
   return location;
-}
-
-export function parseCovid(value: unknown): CovidData | null {
-  if (!isRecord(value) || !finiteNumber(value.cases)) return null;
-  const result: CovidData = {};
-  for (const [key, number] of Object.entries(value)) if (finiteNumber(number)) result[key] = number;
-  const tests = result.totalTests ?? result.tests;
-  if (tests !== undefined) result.totalTests = tests;
-  return result;
-}
-
-export function parseNews(value: unknown): NewsListing[] | null {
-  if (!Array.isArray(value)) return null;
-  const result: NewsListing[] = [];
-  for (const candidate of value) {
-    if (!isRecord(candidate) || typeof candidate.title !== 'string' || typeof candidate.link !== 'string' || !(candidate.date === null || typeof candidate.date === 'string')) return null;
-    result.push({ title: candidate.title, link: candidate.link, date: candidate.date });
-  }
-  return result;
 }

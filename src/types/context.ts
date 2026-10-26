@@ -1,5 +1,5 @@
 import type { ParsedSettings, LocalizationSettings, FontFormat, EditingSettings, EditableCategory, CalendarReference } from './settings';
-import type { WidgetData, WeatherData, SunData, CovidData, NewsListing, WeatherResponse } from './data';
+import type { WidgetData, WeatherData, SunData, WeatherResponse } from './data';
 import type { CustomItems, ASCIIColumn, LayoutInput, WidgetContainer, ColorFormat, GradientSettings, RuntimeSettings, RuntimeFontSettings } from './rendering';
 
 export type { CustomItems, LayoutInput } from './rendering';
@@ -128,8 +128,6 @@ export interface WeatherCalContext extends WidgetState {
   loadWeatherData(minAge: number, maxAge: number): Promise<{locale: string; response: WeatherResponse | null}>;
   setupWeather(): Promise<void>;
   setupSunrise(): Promise<void>;
-  setupCovid(): Promise<void>;
-  setupNews(): Promise<void>;
   selectWeatherProvider(firstRun?: boolean): Promise<boolean>;
   getWeatherApiPath(newApiKey: string): Promise<string | WeatherResponse | null>;
   getWeatherApiPath(): Promise<string>;
@@ -148,8 +146,6 @@ export interface WeatherCalContext extends WidgetState {
   battery(column: WidgetStack): void;
   week(column: WidgetStack): void;
   symbol(column: WidgetStack, name?: string | null): void;
-  covid(column: WidgetStack): Promise<void>;
-  news(column: WidgetStack): Promise<void>;
   runSetup(name: string, iCloudInUse: boolean, codeFilename?: string, gitHubUrl?: string): Promise<string | undefined>;
   editSettings(codeFilename?: string, gitHubUrl?: string): Promise<string | undefined>;
   initialSetup(imported?: boolean): Promise<string | undefined>;

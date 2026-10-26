@@ -28,7 +28,6 @@ export interface LocalizationSettings {
   noRemindersMessage: string;
   durationMinute: string;
   durationHour: string;
-  covid: string;
   week: string;
 }
 
@@ -46,15 +45,12 @@ export interface FontSettings {
   reminderTitle: FontFormat;
   reminderTime: FontFormat;
   noReminders: FontFormat;
-  newsTitle: FontFormat;
-  newsDate: FontFormat;
   largeTemp: FontFormat;
   smallTemp: FontFormat;
   tinyTemp: FontFormat;
   customText: FontFormat;
   battery: FontFormat;
   sunrise: FontFormat;
-  covid: FontFormat;
   week: FontFormat;
 }
 
@@ -122,24 +118,10 @@ export interface WeatherSettings {
   urlForecast: string;
 }
 
-export interface CovidSettings {
-  country: string;
-  apiUrl: string;
-  url: string;
-}
-
 export interface SymbolSettings {
   size: NumericSetting;
   padding: PaddingSettings;
   tintColor: string;
-}
-
-export interface NewsSettings {
-  url: string;
-  numberOfItems: NumericSetting;
-  limitLineHeight: boolean;
-  showDate: string;
-  dateFormat: string;
 }
 
 export interface SettingsValues {
@@ -151,9 +133,7 @@ export interface SettingsValues {
   reminders: RemindersSettings;
   sunrise: SunriseSettings;
   weather: WeatherSettings;
-  covid: CovidSettings;
   symbol: SymbolSettings;
-  news: NewsSettings;
 }
 export interface ParsedSettings extends SettingsValues { layout?: string }
 export type Settings = ParsedSettings;
@@ -194,7 +174,6 @@ export function settingsValues(schema: EditingSettings): ParsedSettings {
       noRemindersMessage: schema.localization.noRemindersMessage.val,
       durationMinute: schema.localization.durationMinute.val,
       durationHour: schema.localization.durationHour.val,
-      covid: schema.localization.covid.val,
       week: schema.localization.week.val,
     },
     font: {
@@ -211,15 +190,12 @@ export function settingsValues(schema: EditingSettings): ParsedSettings {
       reminderTitle: schema.font.reminderTitle.val,
       reminderTime: schema.font.reminderTime.val,
       noReminders: schema.font.noReminders.val,
-      newsTitle: schema.font.newsTitle.val,
-      newsDate: schema.font.newsDate.val,
       largeTemp: schema.font.largeTemp.val,
       smallTemp: schema.font.smallTemp.val,
       tinyTemp: schema.font.tinyTemp.val,
       customText: schema.font.customText.val,
       battery: schema.font.battery.val,
       sunrise: schema.font.sunrise.val,
-      covid: schema.font.covid.val,
       week: schema.font.week.val,
     },
     date: {
@@ -281,22 +257,10 @@ export function settingsValues(schema: EditingSettings): ParsedSettings {
       urlFuture: schema.weather.urlFuture.val,
       urlForecast: schema.weather.urlForecast.val,
     },
-    covid: {
-      country: schema.covid.country.val,
-      apiUrl: schema.covid.apiUrl.val,
-      url: schema.covid.url.val,
-    },
     symbol: {
       size: schema.symbol.size.val,
       padding: schema.symbol.padding.val,
       tintColor: schema.symbol.tintColor.val,
-    },
-    news: {
-      url: schema.news.url.val,
-      numberOfItems: schema.news.numberOfItems.val,
-      limitLineHeight: schema.news.limitLineHeight.val,
-      showDate: schema.news.showDate.val,
-      dateFormat: schema.news.dateFormat.val,
     },
   };
 }

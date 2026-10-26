@@ -8,7 +8,7 @@ import { createEnvironment, installScriptable, texts, runtime, required, inspect
 import type { Environment } from './helpers/scriptable';
 import { scriptFixture } from './helpers/script-format';
 
-const layout = 'row\ncolumn\ndate\ngreeting\nevents\nreminders\ncurrent\nfuture\nforecast\ndaily\nhourly\nsunrise\nsunset\ncovid\ntext(Hello (world))\nbattery\nweek\nsymbol(star.fill)\nnews';
+const layout = 'row\ncolumn\ndate\ngreeting\nevents\nreminders\ncurrent\nfuture\nforecast\ndaily\nhourly\nsunrise\nsunset\ntext(Hello (world))\nbattery\nweek\nsymbol(star.fill)';
 
 async function execute(source: string, env: Environment, name = 'Test Widget') {
   // VM receives only Scriptable boundary objects and standard ECMAScript built-ins.

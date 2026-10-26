@@ -47,11 +47,6 @@ export default async function(this: WeatherCalContext, getFromCalendar: GetCalen
           val: "h",
           name: "Duration label for hours",
         },
-        covid: {
-          val: "{cases} cases, {deaths} deaths, {recovered} recoveries",
-          name: "COVID data text",
-          description: "Each {token} is replaced with the number from the data. The available tokens are: cases, todayCases, deaths, todayDeaths, recovered, active, critical, casesPerOneMillion, deathsPerOneMillion, totalTests, testsPerOneMillion"
-        },
         week: {
           val: "Week",
           name: "Label for the week number",

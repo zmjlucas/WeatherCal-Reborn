@@ -35,9 +35,9 @@ test('widget creation accepts legacy settings and does not leak paths, data or c
   const settings = await code.getSettings();
   settings.layout = 'row\ncolumn\nvalue';
   let first = true;
-  await code.createWidget(settings, 'Old', false, { value(column: WidgetContainer) { column.addText('old'); code.data.news = [{ title: 'Old marker', link: '', date: null }]; } });
+  await code.createWidget(settings, 'Old', false, { value(column: WidgetContainer) { column.addText('old'); code.data.location = { locality: 'Old marker' }; } });
   env.cloud.writeString('/library/weather-cal-New', JSON.stringify({ type: 'color', color: 'abc123' }));
-  const widget = inspect(await code.createWidget('row\ncolumn\nvalue', 'New', true, { value(column: WidgetContainer) { column.addText(code.data.news?.some(item => item.title === 'Old marker') ? 'stale' : 'new'); first = false; } }));
+  const widget = inspect(await code.createWidget('row\ncolumn\nvalue', 'New', true, { value(column: WidgetContainer) { column.addText(code.data.location?.locality === 'Old marker' ? 'stale' : 'new'); first = false; } }));
   assert.equal(first, false);
   assert.deepEqual(texts(widget), ['new']);
   assert.equal(code.fm, env.cloud);
@@ -75,10 +75,10 @@ test('separate widget instances retain independent preferences, custom callbacks
   const second = create();
   env.local.writeString('/library/weather-cal-preferences-First', JSON.stringify({ localization: { morningGreeting: 'First' }, widget: { padding: 0, instantDark: false } }));
   await first.createWidget('row\ncolumn\nvalue', 'First', false, {
-    value(column: WidgetContainer) { first.data.news = [{ title: 'First instance', link: '', date: null }]; column.addText('First'); }
+    value(column: WidgetContainer) { first.data.location = { locality: 'First instance' }; column.addText('First'); }
   });
   const result = await second.createWidget('row\ncolumn\nvalue', 'Second', true, {
-    value(column: WidgetContainer) { column.addText(second.data.news ? 'leaked' : 'Second'); }
+    value(column: WidgetContainer) { column.addText(second.data.location ? 'leaked' : 'Second'); }
   });
   assert.deepEqual(texts(result), ['Second']);
   assert.equal(first.settings.localization.morningGreeting, 'First');
@@ -86,6 +86,6 @@ test('separate widget instances retain independent preferences, custom callbacks
   assert.equal(first.settings.widget.instantDark, false);
   assert.equal(first.fm, env.local);
   assert.equal(second.fm, env.cloud);
-  assert.equal(required(first.data.news)[0]?.title, 'First instance');
+  assert.equal(required(first.data.location).locality, 'First instance');
   assert.notEqual(first.custom, second.custom);
 });

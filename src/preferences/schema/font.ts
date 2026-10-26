@@ -71,16 +71,6 @@ export default async function(this: WeatherCalContext, getFromCalendar: GetCalen
           name: "No reminders message",
           type: "fonts",
         },
-        newsTitle:  {
-          val: { size: "14", color: "", dark: "", font: "", caps: "" },
-          name: "News item title",
-          type: "fonts",
-        },
-        newsDate:   {
-          val: { size: "14", color: "ffffffcc", dark: "", font: "", caps: "" },
-          name: "News item date",
-          type: "fonts",
-        },
         largeTemp:   {
           val: { size: "34", color: "", dark: "", font: "light", caps: "" },
           name: "Large temperature label",
@@ -109,11 +99,6 @@ export default async function(this: WeatherCalContext, getFromCalendar: GetCalen
         sunrise:     {
           val: { size: "14", color: "", dark: "", font: "medium", caps: "" },
           name: "Sunrise and sunset",
-          type: "fonts",
-        },
-        covid:       {
-          val: { size: "14", color: "", dark: "", font: "medium", caps: "" },
-          name: "COVID data",
           type: "fonts",
         },
         week:        {

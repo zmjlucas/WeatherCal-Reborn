@@ -18,13 +18,13 @@ async function widgetContext() {
       events: { showCalendarColor: 'circle', showLocation: true, showEventLength: 'time', labelFormat: 'day', noEventBehavior: 'message' },
       reminders: { showListColor: 'none', useRelativeDueDate: true, noRemindersBehavior: 'message' },
       weather: { showLocation: true, horizontalCondition: true, showCondition: true, showHighLow: true, tomorrowShownAtHour: '20', showRain: true, showHours: '3', showDays: '3', showHoursFormat: 'hour', showDaysFormat: 'day', showToday: false },
-      widget: {}, sunrise: { showWithin: '0', separateElements: false }, covid: { url: 'https://example.com/covid' },
-      symbol: { size: '18', tintColor: '', padding: {} }, news: { showDate: 'relative', limitLineHeight: true }
+      widget: {}, sunrise: { showWithin: '0', separateElements: false },
+      symbol: { size: '18', tintColor: '', padding: {} }
     };
   for (const key of Object.keys(settings) as Array<keyof typeof settings>) Object.assign(context.settings[key], settings[key]);
-  Object.assign(context.localization, { nightGreeting: 'Night', morningGreeting: 'Morning', afternoonGreeting: 'Afternoon', eveningGreeting: 'Evening', tomorrowLabel: 'Tomorrow', nextHourLabel: 'Next hour', noEventMessage: 'No events', noRemindersMessage: 'No reminders', durationHour: 'h', durationMinute: 'm', covid: 'World {world}; country {country}', week: 'Week' });
+  Object.assign(context.localization, { nightGreeting: 'Night', morningGreeting: 'Morning', afternoonGreeting: 'Afternoon', eveningGreeting: 'Evening', tomorrowLabel: 'Tomorrow', nextHourLabel: 'Next hour', noEventMessage: 'No events', noRemindersMessage: 'No reminders', durationHour: 'h', durationMinute: 'm', week: 'Week' });
   context.data = {
-      events: [], reminders: [], location: { locality: 'Cupertino' }, covid: { world: 1000, country: 5 }, news: [],
+      events: [], reminders: [], location: { locality: 'Cupertino' },
       sun: { sunrise: new Date(2026, 8, 8, 6).getTime(), sunset: new Date(2026, 8, 8, 18).getTime(), tomorrow: new Date(2026, 8, 9, 6).getTime() },
       weather: { currentTemp: 22, currentCondition: 800, currentDescription: 'Clear', todayHigh: 27, todayLow: 16, nextHourRain: 5, tomorrowRain: 10, hourly: Array.from({ length: 8 }, (_, i) => ({ Temp: 22 + i, Condition: 800 })), forecast: Array.from({ length: 8 }, (_, i) => ({ High: 27 + i, Low: 16 + i, Condition: 800 })) }
     };
@@ -218,16 +218,6 @@ test('separate sunset and sunrise items preserve their explicit choice', async t
   }
 });
 
-test('COVID interpolates zero totals and omits only absent values', async t => {
-  const { Stack } = installScriptable(t);
-  const context = await widgetContext();
-  context.data.covid = { world: 0, country: 1200 };
-  context.localization.covid += '; missing {unknown}';
-  const column = new Stack();
-  await context.covid(column);
-  assert.deepEqual(texts(column), ['World 0; country 1,200; missing ']);
-});
-
 test('custom text, battery and ISO week render their changing values', async t => {
   const { Stack } = installScriptable(t);
   const context = await widgetContext();
@@ -252,33 +242,6 @@ test('symbol uses defaults when optional settings are omitted', async t => {
   const image = descendants(column).find(x => x.type === 'image')!;
   assert.equal(image.image.symbol, 'star.fill');
   assert.equal(image.imageSize.width, 80);
-});
-
-test('news noDate renders only the headline stack and preserves article links', async t => {
-  const { Stack } = installScriptable(t);
-  const context = await widgetContext();
-  context.settings.news.showDate = 'noDate';
-  context.data.news = [{ title: 'Headline', date: '2026-09-08T08:00:00Z', link: 'https://example.com/story' }];
-  const column = new Stack();
-  await context.news(column);
-  assert.deepEqual(texts(column), ['Headline']);
-  assert.equal(column.children[0]!.children.length, 1);
-  assert.equal(column.children[0]!.url, 'https://example.com/story');
-  assert.equal(descendants(column).find(x => x.type === 'text')!.lineLimit, 1);
-});
-
-test('news supports relative, date, time, datetime and custom date labels', async t => {
-  const { Stack } = installScriptable(t);
-  const context = await widgetContext();
-  context.data.news = [{ title: 'Headline', date: context.now.toISOString(), link: 'https://example.com/story' }];
-  for (const mode of ['relative', 'date', 'time', 'datetime', 'custom']) {
-    context.settings.news.showDate = mode;
-    context.settings.news.dateFormat = 'custom';
-    const column = new Stack();
-    await context.news(column);
-    assert.equal(texts(column).length, 2);
-    assert.equal(descendants(column).filter(x => x.type === 'text')[1]!.style, 'newsDate');
-  }
 });
 
 test('dynamic date sizing loads events before choosing its format', async t => {
@@ -359,18 +322,6 @@ test('symbols honor custom size, padding and tint', async t => {
   assert.deepEqual(column.children[0]!.padding, [0, 2, 4, 6]);
   assert.equal(image.imageSize.width, 42);
   assert.equal(image.tintColor.hex, '00aaff');
-});
-
-test('news skips missing or invalid dates while retaining the headline', async t => {
-  const { Stack } = installScriptable(t);
-  const context = await widgetContext();
-  for (const date of [null, '', 'not-a-date']) {
-    context.data.news = [{ title: 'Undated headline', date, link: 'https://example.com/story' }];
-    const column = new Stack();
-    await context.news(column);
-    assert.deepEqual(texts(column), ['Undated headline']);
-    assert.equal(column.children[0]!.children.length, 1);
-  }
 });
 
 test('blank symbol size renders a usable image in automatically sized and narrow columns', async t => {

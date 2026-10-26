@@ -13,16 +13,12 @@ test('legacy service overrides may populate state and return no value', async t 
   context.setupSunrise = async function () { this.data.sun = { sunrise: null, sunset: null, tomorrow: null }; };
   context.setupEvents = async function () { this.data.events = []; };
   context.setupReminders = async function () { this.data.reminders = []; };
-  context.setupNews = async function () { this.data.news = []; };
-  context.setupCovid = async function () { this.data.covid = { world: 0 }; };
   await context.current(context.currentColumn);
   await context.future(context.currentColumn);
   await context.forecast(context.currentColumn);
   await context.sunrise(context.currentColumn);
   await context.events(context.currentColumn);
   await context.reminders(context.currentColumn);
-  await context.news(context.currentColumn);
-  await context.covid(context.currentColumn);
   assert(texts(widget).includes('0°'));
 });
 

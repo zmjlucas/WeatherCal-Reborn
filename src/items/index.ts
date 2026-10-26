@@ -4,5 +4,4 @@ import weather from './weather';
 import forecast from './forecast';
 import sun from './sun';
 import basic from './basic';
-import feeds from './feeds';
-export default { ...calendar, ...weather, ...forecast, ...sun, ...basic, ...feeds };
+export default { ...calendar, ...weather, ...forecast, ...sun, ...basic };

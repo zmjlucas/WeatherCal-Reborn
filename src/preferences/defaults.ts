@@ -8,9 +8,7 @@ import events from './schema/events';
 import reminders from './schema/reminders';
 import sunrise from './schema/sunrise';
 import weather from './schema/weather';
-import covid from './schema/covid';
 import symbol from './schema/symbol';
-import news from './schema/news';
 import type { WeatherCalContext } from '../types/context';
 import type { EditingSettings } from '../types/settings';
 
@@ -35,9 +33,7 @@ export default {
       ...await reminders.call(this, getFromCalendar),
       ...await sunrise.call(this, getFromCalendar),
       ...await weather.call(this, getFromCalendar),
-      ...await covid.call(this, getFromCalendar),
       ...await symbol.call(this, getFromCalendar),
-      ...await news.call(this, getFromCalendar)
     };
   }
 };

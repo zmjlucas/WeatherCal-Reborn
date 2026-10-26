@@ -16,8 +16,6 @@ async function engine(t: TestContext, options: EnvironmentOptions = {}) {
   Object.assign(service.settings.widget, { units: 'metric', updateLocation: '10' });
   Object.assign(service.settings.events, { selectCalendars: [], numberOfDays: '1', showTomorrow: '0', showAllDay: true, minutesAfter: '', numberOfEvents: '20' });
   Object.assign(service.settings.reminders, { selectLists: [], showWithoutDueDate: true, showOverdue: true, todayOnly: false, numberOfReminders: '20' });
-  Object.assign(service.settings.news, { url: 'https://example.com/feed?lang=en&section=world', numberOfItems: '5' });
-  service.settings.covid.country = 'USA';
   service.fm.writeString('/library/weather-cal-api-key', 'test-key');
   service.fm.writeString('/library/weather-cal-api-path', 'https://api.openweathermap.org/data/3.0/onecall');
   return { service, ...env };
@@ -58,7 +56,7 @@ function event(service: WeatherCalContext, id: string, day = 0, hour = 16, extra
 
 function ageCaches(service: WeatherCalContext, minutes: number) {
   for (const [key, value] of (service.fm === runtime.FileManager.local() ? runtime.FileManager.local() : runtime.FileManager.iCloud()).store) {
-    if (key.includes('cache') || key.includes('news') || key.includes('covid')) value.modified = new Date(service.now.getTime() - minutes * 60000);
+    if (key.includes('cache')) value.modified = new Date(service.now.getTime() - minutes * 60000);
   }
 }
 
@@ -231,101 +229,6 @@ test('API-key validation retains the legacy fallback and saves successful endpoi
   assert.match(await service.getWeatherApiPath(), /data\/2\.5\/onecall\?appid=test-key$/);
 });
 
-test('RSS parses CDATA, XML entities, optional fields, and safe cache filenames', async t => {
-  const xml = '<rss><channel><item><title><![CDATA[Wind &amp; rain &#x1F327; &#9730;]]></title><link>https://example.com/a?x=1&amp;y=2</link><pubDate>Tue, 08 Sep 2026 10:00:00 GMT</pubDate></item><item><description>Untitled update</description></item></channel></rss>';
-  const { service } = await engine(t, { request: async () => xml });
-  await service.setupNews();
-  assert.equal(required(service.data.news)[0]!.title, 'Wind & rain 🌧 ☂');
-  assert.equal(required(service.data.news)[0]!.link, 'https://example.com/a?x=1&y=2');
-  assert.equal(new Date(required(required(service.data.news)[0]!.date)).toISOString(), '2026-09-08T10:00:00.000Z');
-  assert.equal(required(service.data.news)[1]!.title, 'Untitled update');
-  assert.equal(required(service.data.news)[1]!.date, null);
-  for (const filename of runtime.FileManager.local().store.keys()) assert.equal(filename.slice('/library/'.length).includes('/'), false);
-});
-
-test('Atom handles namespaces, alternate links, single-quoted attributes and updated dates', async t => {
-  const xml = `<atom:feed xmlns:atom="http://www.w3.org/2005/Atom"><atom:entry><atom:title type='html'>Title &quot;one&quot;</atom:title><atom:link rel='self' href='https://example.com/api/1'/><atom:link href='https://example.com/story/1' rel='alternate'/><atom:updated>2026-09-08T10:00:00Z</atom:updated></atom:entry></atom:feed>`;
-  const { service } = await engine(t, { request: async () => xml });
-  await service.setupNews();
-  assert.equal(required(service.data.news).length, 1);
-  assert.equal(required(service.data.news)[0]!.title, 'Title "one"');
-  assert.equal(required(service.data.news)[0]!.link, 'https://example.com/story/1');
-  assert.equal(new Date(required(required(service.data.news)[0]!.date)).toISOString(), '2026-09-08T10:00:00.000Z');
-});
-
-test('news fallback preserves cache on invalid responses and applies changed item limits', async t => {
-  let xml = '<rss><channel><item><title>First</title></item><item><title>Second</title></item></channel></rss>';
-  const { service } = await engine(t, { request: async () => xml });
-  service.settings.news.numberOfItems = '1';
-  await service.setupNews();
-  assert.equal(required(service.data.news).length, 1);
-  service.settings.news.numberOfItems = '2';
-  await service.setupNews();
-  assert.equal(required(service.data.news).length, 2);
-  ageCaches(service, 10);
-  xml = '<html>Service unavailable</html>';
-  await service.setupNews();
-  assert.deepEqual(required(service.data.news).map(item => item.title), ['First', 'Second']);
-  service.settings.news.numberOfItems = '1';
-  await service.setupNews();
-  assert.equal(required(service.data.news).length, 1);
-});
-
-test('COVID preserves upstream numeric fields, scopes countries, and supports global data', async t => {
-  const { service, requests } = await engine(t, { request: async url => ({ cases: url.includes('/all') ? 200 : 100, todayCases: 0, totalTests: 42, updated: 1700000000000 }) });
-  await service.setupCovid();
-  assert.equal(required(service.data.covid).cases, 100);
-  assert.equal(required(service.data.covid).todayCases, 0);
-  assert.match(required(requests[0]), /^https:\/\/disease\.sh\/v3\/covid-19\/countries\/USA$/);
-  service.settings.covid.country = 'World';
-  await service.setupCovid();
-  assert.equal(required(service.data.covid).cases, 200);
-  assert.match(required(requests[1]), /\/all$/);
-});
-
-test('COVID aliases disease.sh fields and keeps old cache when refresh returns an error', async t => {
-  let response: unknown = { cases: 100, tests: 42, testsPerOneMillion: 12, critical: 2 };
-  const { service } = await engine(t, { request: async () => response });
-  await service.setupCovid();
-  assert.equal(required(service.data.covid).totalTests, 42);
-  assert.equal(required(service.data.covid).testsPerOneMillion, 12);
-  ageCaches(service, 20);
-  response = { message: 'Country not found' };
-  await service.setupCovid();
-  assert.equal(required(service.data.covid).cases, 100);
-});
-
-test('truncated news feed preserves the previous headlines', async t => {
-  let xml = '<rss><channel><item><title>Saved</title></item></channel></rss>';
-  const { service } = await engine(t, { request: async () => xml });
-  await service.setupNews();
-  ageCaches(service, 10);
-  xml = '<rss><channel><item><title>Truncated';
-  await service.setupNews();
-  assert.deepEqual(required(service.data.news).map(item => item.title), ['Saved']);
-});
-
-test('a valid empty feed clears previously cached headlines', async t => {
-  let xml = '<rss><channel><item><title>Saved</title></item></channel></rss>';
-  const { service } = await engine(t, { request: async () => xml });
-  await service.setupNews();
-  ageCaches(service, 10);
-  xml = '<rss><channel></channel></rss>';
-  await service.setupNews();
-  assert.deepEqual(service.data.news, []);
-});
-
-test('long feed URLs remain isolated without exceeding filesystem filename limits', async t => {
-  const { service } = await engine(t, { request: async url => '<rss><channel><item><title>' + (url.endsWith('a') ? 'A' : 'B') + '</title></item></channel></rss>' });
-  service.settings.news.url = 'https://example.com/' + 'section/'.repeat(100) + 'a';
-  await service.setupNews();
-  assert.equal(required(service.data.news)[0]!.title, 'A');
-  service.settings.news.url = service.settings.news.url.slice(0, -1) + 'b';
-  await service.setupNews();
-  assert.equal(required(service.data.news)[0]!.title, 'B');
-  for (const file of runtime.FileManager.local().store.keys()) assert.ok(file.length < 255);
-});
-
 test('provider cache identity rejects unrelated envelopes', async t => {
   let offline = false;
   const { service } = await engine(t, { request: async () => { if (offline) throw Error('Offline'); return weatherFixture(); } });
@@ -338,19 +241,6 @@ test('provider cache identity rejects unrelated envelopes', async t => {
   offline = true;
   await service.setupWeather();
   assert.equal(required(service.data.weather).currentTemp, null);
-});
-
-test('COVID supports an explicit compatible endpoint without mixing its country cache', async t => {
-  const { service, requests } = await engine(t, { request: async url => ({ cases: url.includes('example.com') ? 25 : 100, tests: 12 }) });
-  await service.setupCovid();
-  service.settings.covid.apiUrl = 'https://example.com/covid/snapshot.json';
-  await service.setupCovid();
-  assert.equal(required(service.data.covid).cases, 25);
-  assert.equal(required(requests.at(-1)), 'https://example.com/covid/snapshot.json');
-  service.settings.covid.apiUrl = '';
-  await service.setupCovid();
-  assert.equal(required(service.data.covid).cases, 100);
-  assert.equal(requests.length, 2);
 });
 
 test('stored iCloud API keys and endpoint preferences hydrate before weather requests', async t => {
@@ -370,21 +260,6 @@ test('stored iCloud API keys and endpoint preferences hydrate before weather req
   assert.equal(new URL(required(requests.at(-1))).searchParams.get('appid'), 'cloud-key');
   assert.ok(downloads.includes(keyPath));
   assert.ok(downloads.includes(endpointPath));
-});
-
-
-test('RSS preserves encoded angle brackets as headline text while removing actual markup', async t => {
-  const xml = '<rss><channel><item><title>Why 3 &lt; 5 and 8 &gt; 6 matters</title></item><item><title><![CDATA[<b>Weather</b> &amp; traffic]]></title></item></channel></rss>';
-  const { service } = await engine(t, { request: async () => xml });
-  await service.setupNews();
-  assert.deepEqual(required(service.data.news).map(item => item.title), ['Why 3 < 5 and 8 > 6 matters', 'Weather & traffic']);
-});
-
-test('Atom distinguishes literal text titles from encoded HTML titles', async t => {
-  const xml = '<feed><entry><title type="text">About &lt;em&gt; tags</title></entry><entry><title type="html">Weather &lt;em&gt;today&lt;/em&gt;</title></entry></feed>';
-  const { service } = await engine(t, { request: async () => xml });
-  await service.setupNews();
-  assert.deepEqual(required(service.data.news).map(item => item.title), ['About <em> tags', 'Weather today']);
 });
 
 test('OpenWeather translates language choices shared with QWeather before requesting data', async t => {
