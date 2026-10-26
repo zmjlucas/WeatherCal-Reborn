@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+.superpowers/
+docs/superpowers/
+.DS_Store
+
+# Generated Node test API declarations; production is checked separately.
+.typecheck/
+
+# Local copies of installed scripts may contain private user edits.
+.icloud-backups/

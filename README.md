@@ -7,4 +7,8 @@ An unofficial rewrite of the original [Weather-Cal](https://github.com/mzeryck/W
 
 ## Credits
 
-Original repo [mzeryck/Weather-Cal](https://github.com/mzeryck/Weather-Cal).
+[MIT] Original repo [mzeryck/Weather-Cal](https://github.com/mzeryck/Weather-Cal) ([license](licenses/weather-cal.LICENSE)).
+
+[MIT] Bundled JavaScript parser [Acorn](https://github.com/acornjs/acorn) ([license](licenses/acorn.LICENSE)).
+
+[Unicode-3.0] Bundled weather unit preferences from [Unicode CLDR / cldr-core](https://github.com/unicode-org/cldr-json) ([license](licenses/cldr-core.LICENSE)).

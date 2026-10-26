@@ -1,0 +1,38 @@
+{
+  "name": "weathercal-reborn",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Modular Scriptable Weather Cal widgets",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": "24.20.0",
+    "pnpm": "11.19.0"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "24.20.0",
+      "onFail": "download"
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "upload:icloud": "node scripts/upload-icloud.mjs",
+    "typecheck": "tsc -p tsconfig.json && node scripts/prepare-test-types.mjs && tsc -p tsconfig.test.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "validate:bundle": "node scripts/validate-bundle.mjs",
+    "check": "pnpm typecheck && pnpm test && pnpm build && pnpm validate:bundle"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "@types/scriptable-ios": "1.7.9",
+    "acorn": "8.18.0",
+    "cldr-core": "49.0.0",
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2",
+    "vitest": "4.1.11"
+  }
+}
