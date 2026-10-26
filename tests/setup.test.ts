@@ -76,7 +76,7 @@ test('preferences and API-key menu actions dispatch without displaying an uninte
   const { engine } = setup(t, { responses: [2, 5, 0] });
   const visited: string[] = [];
   engine.editPreferences = async () => { visited.push('preferences'); };
-  engine.getWeatherKey = async () => { visited.push('key'); return true; };
+  engine.selectWeatherProvider = async () => { visited.push('key'); return true; };
   await engine.editSettings('engine', '');
   await engine.editSettings('engine', '');
   assert.deepEqual(visited, ['preferences', 'key']);

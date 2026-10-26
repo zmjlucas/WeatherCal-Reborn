@@ -40,8 +40,8 @@ export default {
       return;
     }
     if (selected !== 5) return;
-    const other = await this.generateAlert('Other settings', ['Re-enter API key', 'Completely reset widget', 'Exit']);
-    if (other === 0) { await this.getWeatherKey(); return; }
+    const other = await this.generateAlert('Other settings', ['Weather provider / API credentials', 'Completely reset widget', 'Exit']);
+    if (other === 0) { await this.selectWeatherProvider(); return; }
     if (other !== 1) return;
     const confirmation = new Alert();
     confirmation.message = 'Are you sure you want to completely reset this widget?';

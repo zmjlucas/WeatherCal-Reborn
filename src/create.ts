@@ -17,6 +17,7 @@ import feeds from './data/feeds';
 import items from './items/index';
 import menu from './setup/menu';
 import onboarding from './setup/onboarding';
+import weatherProvider from './setup/weather-provider';
 import backgrounds from './setup/backgrounds';
 import distribution from './setup/distribution';
 import { WidgetState } from './types/context';
@@ -26,7 +27,7 @@ export function createWeatherCal(): WeatherCalContext {
   return Object.assign(new WidgetState(), {
     ...widget, ...layout, ...formatting, ...drawing, ...gradient, ...prompts, ...storage,
     ...defaults, ...store, ...editor, ...cache, ...agenda, ...location, ...weather,
-    ...feeds, ...items, ...menu, ...onboarding, ...backgrounds, ...distribution,
+    ...feeds, ...items, ...menu, ...onboarding, ...weatherProvider, ...backgrounds, ...distribution,
     // Clone mutable enum groups per instance without a JSON or assertion boundary.
     enum: { caps: { ...defaults.enum.caps }, icons: { ...defaults.enum.icons } },
   });

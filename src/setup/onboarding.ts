@@ -33,23 +33,7 @@ export default {
       }
       if (await this.generateAlert(message,options)) return
 
-      message = "To display the weather on your widget, you need an OpenWeather API key."
-      options = ["I already have a key", "I need to get a key", "I don't want to show weather info"]
-      const weather = await this.generateAlert(message,options)
-      if (weather < 0) return
-
-      // Show a web view to claim the API key.
-      if (weather == 1) {
-        message = "On the next screen, sign up for OpenWeather. Find the API key, copy it, and close the web view. You will then be prompted to paste in the key."
-        await this.generateAlert(message,["Continue"])
-
-        const webView = new WebView()
-        await webView.loadURL("https://openweathermap.org/home/sign_up")
-        await webView.present()
-      }
-
-      // We need the API key if we're showing weather.
-      if (weather < 2 && !(await this.getWeatherKey(true))) { return }
+      if (!(await this.selectWeatherProvider(true))) return
 
       if (!imported && !(await this.setWidgetBackground())) return
       this.writePreference("weather-cal-setup", "true")

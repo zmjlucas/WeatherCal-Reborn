@@ -130,6 +130,7 @@ export interface WeatherCalContext extends WidgetState {
   setupSunrise(): Promise<void>;
   setupCovid(): Promise<void>;
   setupNews(): Promise<void>;
+  selectWeatherProvider(firstRun?: boolean): Promise<boolean>;
   getWeatherApiPath(newApiKey: string): Promise<string | WeatherResponse | null>;
   getWeatherApiPath(): Promise<string>;
   date(column: WidgetStack): Promise<void>;

@@ -123,6 +123,18 @@ export default {
         this.usingASCII ? await this.processASCIILine(line) : await this.executeItem(line)
       }
       if (this.usingASCII && this.currentColumns.length) await this.processASCIILine("---")
+      if (this.data.weatherAttributions !== undefined) {
+        this.widget.addSpacer(4)
+        const attribution = this.widget.addStack()
+        attribution.layoutVertically()
+        const source = this.provideText('QWeather', attribution, { ...this.format.smallTemp, size: 9 })
+        source.url = 'https://www.qweather.com'
+        for (const text of this.data.weatherAttributions) {
+          const credit = this.provideText(text, attribution, { ...this.format.smallTemp, size: 9 })
+          if (/^https:\/\//.test(text)) credit.url = text
+        }
+      }
+      if (this.data.weatherError) this.provideText(this.data.weatherError, this.widget, { ...this.format.smallTemp, size: 9 })
       return this.widget
     }
 };
