@@ -17,6 +17,8 @@ export async function buildArtifacts() {
   const notice = `/* WeatherCal-Reborn ${version}\n${license}\n*/\n`;
   const parserLicense = (await fs.readFile(path.join(root, 'node_modules/acorn/LICENSE'), 'utf8')).trim();
   const parserNotice = `/* Acorn 8.18.0 (bundled JavaScript parser)\n${parserLicense}\n*/\n`;
+  const cldrLicense = (await fs.readFile(path.join(root, 'node_modules/cldr-core/LICENSE'), 'utf8')).trim();
+  const cldrNotice = `/* Unicode CLDR (bundled weather unit preferences)\n${cldrLicense}\n*/\n`;
   async function bundle(entry) {
     const result = await esbuild({
       absWorkingDir: root, entryPoints: [entry], bundle: true, platform: 'neutral', format: 'esm',
@@ -37,7 +39,7 @@ export async function buildArtifacts() {
   const engine = combined.slice(0, start) + combined.slice(finish + end.length);
   const artifacts = {
     'one.js': metadata('calendar') + '// WeatherCal: user begin v1\n' + user +
-      '// WeatherCal: user end v1\n// WeatherCal: engine begin v1\n' + notice + parserNotice + engine +
+      '// WeatherCal: user end v1\n// WeatherCal: engine begin v1\n' + notice + parserNotice + cldrNotice + engine +
       '// WeatherCal: engine end v1\n',
     'weather-cal-converter.js': metadata('magic') + notice + await bundle('src/scriptable/converter.ts'),
   };

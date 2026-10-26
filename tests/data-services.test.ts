@@ -31,6 +31,24 @@ function weatherFixture() {
   };
 }
 
+test('OpenWeather resolves automatic units before requesting and caching temperatures', async t => {
+  const { service, requests } = await engine(t, { request: async url => {
+    const units = new URL(url).searchParams.get('units');
+    assert(units === 'metric' || units === 'imperial');
+    const value = weatherFixture();
+    value.current.temp = units === 'imperial' ? 68 : 20;
+    return value;
+  } });
+  service.settings.widget = (await service.getSettings()).widget;
+  service.data.location = { latitude: 31.23, longitude: 121.47 };
+  for (const [locale, temperature] of [['en_CN', 20], ['zh_US', 68], ['en_CN', 20]] as const) {
+    runtime.Device.locale = () => locale;
+    await service.setupWeather();
+    assert.equal(service.data.weather?.currentTemp, temperature);
+  }
+  assert.equal(requests.length, 2);
+});
+
 function event(service: WeatherCalContext, id: string, day = 0, hour = 16, extra: Record<string, unknown> = {}) {
   const startDate = new Date(service.now);
   startDate.setDate(startDate.getDate() + day);

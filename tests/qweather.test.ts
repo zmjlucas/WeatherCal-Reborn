@@ -6,6 +6,36 @@ import type { EnvironmentOptions } from './helpers/scriptable';
 import type { TestContext } from 'vitest';
 
 const host = 'test.re.qweatherapi.com';
+
+test('default units follow device region and isolate QWeather caches when the region changes', async t => {
+  const { service, requests } = await setup(t);
+  service.settings = await service.getSettings();
+  service.locale = 'en_US';
+  for (const [locale, temperature] of [
+    ['zh_Hans_CN', 20], ['en_US', 68], ['en_GB', 20], ['en_BS', 68],
+    ['en_LR', 20], ['en', 20], ['invalid_locale!', 20], ['zh_Hant_TW', 20]
+  ] as const) {
+    runtime.Device.locale = () => locale;
+    await service.setupWeather();
+    assert.equal(service.data.weather?.currentTemp, temperature, locale);
+  }
+  assert.equal(requests.length, 6);
+});
+
+test('saved manual units override device region and saved auto continues following it', async t => {
+  const { service } = await setup(t);
+  for (const [units, locale, temperature] of [
+    ['imperial', 'zh_CN', 68], ['metric', 'en_US', 20], ['auto', 'en_US', 68], ['auto', 'zh_CN', 20]
+  ] as const) {
+    service.fm.writeString(service.prefPath, JSON.stringify({ widget: { units } }));
+    service.settings = await service.getSettings();
+    runtime.Device.locale = () => locale;
+    await service.setupWeather();
+    assert.equal(service.data.weather?.currentTemp, temperature);
+    assert.equal((await service.getSettings(true)).widget.units.val, units);
+  }
+});
+
 function payload(url: string): unknown {
   const metadata = { attributions: ['QWeather test data'] };
   if (url.includes('/current/')) return { metadata, condition: { code: '100', text: '晴' }, temperature: { value: 20, unit: '°C' } };

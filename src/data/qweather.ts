@@ -4,6 +4,7 @@ import { parseWeatherResponse } from '../types/data';
 import type { WeatherResponse } from '../types/data';
 import { finiteNumber, record } from '../types/json';
 import { parseQWeatherPart } from './qweather-response';
+import { resolveWeatherUnits } from './weather-units';
 
 const queue = new Map<string, Promise<unknown>>();
 const refreshInterval = 15 * 60 * 1000;
@@ -36,7 +37,7 @@ export async function loadQWeather(context: WeatherCalContext, latitude: number,
   const files = FileManager.local();
   const previous = queue.get(host) || Promise.resolve();
   const task = previous.catch(() => {}).then(async (): Promise<WeatherResponse | null> => {
-    const units = context.settings.widget.units;
+    const units = resolveWeatherUnits(context.settings.widget.units);
     const lang = locale;
     const point = latitude.toFixed(2) + '/' + longitude.toFixed(2);
     const scope = qweatherCacheScope(host);

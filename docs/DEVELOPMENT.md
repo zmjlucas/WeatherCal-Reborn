@@ -127,6 +127,18 @@ Keep `package.json` on Semantic Versioning. Move the Unreleased changelog entrie
 
 ## Weather providers
 
+Temperature units default to `auto`, using the region from Scriptable's
+`Device.locale()` and the weather temperature preferences in Unicode's
+`cldr-core` data (bundled locally; no mapping network request). The widget's
+display language does not change this choice. Missing or invalid regions fall
+back to Celsius. Set Overall settings → Units to `imperial` or `metric` for a
+manual override; existing saved values are preserved, so choose `auto` once
+if an older widget has saved `imperial`. Both providers cache by the resolved
+unit, allowing automatic units to follow later system-region changes.
+
+References: [Scriptable Device](https://docs.scriptable.app/device/),
+[Unicode CLDR unit preferences](https://github.com/unicode-org/cldr-json/blob/main/cldr-json/cldr-core/supplemental/unitPreferenceData.json).
+
 Run the script → **Other settings → Weather provider / API credentials**. Choose
 **QWeather (default)** or **OpenWeather**. The choice is saved per widget;
 **Edit preferences → Weather → Weather provider** can also switch providers

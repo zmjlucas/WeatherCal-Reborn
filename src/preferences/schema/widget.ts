@@ -13,11 +13,11 @@ export default async function(this: WeatherCalContext, getFromCalendar: GetCalen
           description: "Leave blank to match the device's locale.",
         },
         units: {
-          val: "imperial",
+          val: "auto",
           name: "Units",
-          description: "Use imperial for Fahrenheit or metric for Celsius.",
+          description: "Auto follows the device's region. Use imperial for Fahrenheit or metric for Celsius.",
           type: "enum",
-          options: ["imperial","metric"],
+          options: ["auto","imperial","metric"],
         },
         preview: {
           val: "large",

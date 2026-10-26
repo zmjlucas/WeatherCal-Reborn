@@ -2,6 +2,7 @@
 
 import { loadQWeather } from './qweather';
 import { qweatherLocale } from './qweather-locale';
+import { resolveWeatherUnits } from './weather-units';
 import type { WeatherCalContext } from '../types/context';
 import { parseWeatherResponse } from '../types/data';
 import type { WeatherResponse, WeatherHour } from '../types/data';
@@ -36,7 +37,7 @@ export default {
     if (!safeLocales.includes(locale)) locale = 'en';
     delete this.data.weatherAttributions;
     delete this.data.weatherError;
-    const units = this.settings.widget.units;
+    const units = resolveWeatherUnits(this.settings.widget.units);
     const identity = JSON.stringify(['openweather', latitude, longitude, units, locale]);
     const path = this.getDataCachePath('cache', identity);
     const cache = this.getCache(path, minAge, maxAge);
