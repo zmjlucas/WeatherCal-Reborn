@@ -53,18 +53,3 @@ test('canceled or invalid QWeather setup leaves prior preferences and key intact
   assert.equal(env.secrets.get('weather-cal-qweather-key:test.re.qweatherapi.com'), 'saved');
   assert.equal(env.requests.length, 0);
 });
-
-test('QWeather attribution is rendered with weather including when high-low display is disabled', async t => {
-  const env = installScriptable(t);
-  const service = await initializedContext(env);
-  service.setupWeather = async () => {
-    service.data.weather = { currentTemp: 20, currentCondition: 800, currentDescription: 'Clear', todayHigh: 24, todayLow: 10, forecast: [], hourly: [], tomorrowRain: null, nextHourRain: null };
-    service.data.weatherAttributions = ['Source statement'];
-  };
-  service.setupSunrise = async () => { service.data.sun = { sunrise: null, sunset: null, tomorrow: null }; };
-  service.fm.writeString(service.prefPath, JSON.stringify({ weather: { showHighLow: false } }));
-  const widget = await service.createWidget('row\n column\n current', service.name, false);
-  const rendered = JSON.stringify(widget);
-  assert.match(rendered, /QWeather/);
-  assert.match(rendered, /Source statement/);
-});

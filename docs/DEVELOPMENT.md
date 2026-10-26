@@ -149,8 +149,8 @@ widget's unit selection, maps weather conditions, and aligns hourly slots using
 forecast timestamps. Daily values include sunrise/sunset; daytime/nighttime rain
 probabilities are not treated as an all-day probability, so QWeather's tomorrow
 rain percentage displays `--`. This change supports existing weather items; it
-does not add AQI, alerts or minutely-rain items. QWeather name/link and returned
-attribution statements appear in the widget footer when QWeather data is used.
+does not add AQI, alerts or minutely-rain items. Returned attribution statements
+are retained in the weather data but are not rendered as a widget footer.
 
 ### Request budget and failures
 
