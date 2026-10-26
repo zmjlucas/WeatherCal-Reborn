@@ -13,6 +13,7 @@ When working with this repository, follow the guidelines below:
 - Do not add tests for values that are statically defined.
 - Do not add negative tests for logic that was removed.
 - Do not modify `README.md` unless you are told to do so.
+- Make small, modular Git commits instead of a huge one.
 - For releases, follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and write changelogs.
 
 ## TroubleShooting
