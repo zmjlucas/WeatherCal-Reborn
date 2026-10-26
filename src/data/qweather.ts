@@ -41,7 +41,8 @@ export async function loadQWeather(context: WeatherCalContext, latitude: number,
     const lang = locale;
     const point = latitude.toFixed(2) + '/' + longitude.toFixed(2);
     const scope = qweatherCacheScope(host);
-    const identity = JSON.stringify(['qweather-v1', scope, point, lang, units]);
+    // Schema 2 retains daytime/nighttime probabilities discarded by older caches.
+    const identity = JSON.stringify(['qweather-v1', scope, point, lang, units, 2]);
     const path = context.getDataCachePath('qweather-cache', identity);
     if (context.fm.fileExists(path) && context.fm.isFileStoredIniCloud(path)) await context.fm.downloadFileFromiCloud(path);
     const cached = context.getCache(path, 15, maxAge);

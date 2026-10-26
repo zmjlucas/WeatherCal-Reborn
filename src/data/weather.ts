@@ -90,6 +90,12 @@ export default {
       tomorrowRain: finiteNumber(daily[1]?.pop) ? daily[1].pop * 100 : null,
       nextHourRain: finiteNumber(hourly[1]?.pop) ? hourly[1].pop * 100 : null
     };
+    if (this.settings.weather.provider !== 'openweather') {
+      this.data.weather.tomorrowRainByPeriod = {
+        daytime: finiteNumber(daily[1]?.daytimePop) ? daily[1].daytimePop * 100 : null,
+        nighttime: finiteNumber(daily[1]?.nighttimePop) ? daily[1].nighttimePop * 100 : null
+      };
+    }
     for (let index = 0; index <= 7; index++) {
       this.data.weather.forecast.push({
         High: daily[index]?.temp?.max ?? null,

@@ -4,7 +4,16 @@ import { finiteNumber, isRecord, record } from './json';
 export interface WeatherCondition { id?: number; main?: string; description?: string }
 export interface WeatherCurrent { temp?: number; weather?: WeatherCondition[] }
 export interface WeatherHour extends WeatherCurrent { dt?: number; pop?: number }
-export interface WeatherDay { temp?: { max?: number; min?: number }; weather?: WeatherCondition[]; sunrise?: number; sunset?: number; pop?: number }
+export interface WeatherDay {
+  temp?: { max?: number; min?: number };
+  weather?: WeatherCondition[];
+  sunrise?: number;
+  sunset?: number;
+  /** Probabilities in [0, 1]; period values must not be treated as all-day pop. */
+  pop?: number;
+  daytimePop?: number;
+  nighttimePop?: number;
+}
 export interface WeatherResponse { attributions?: string[]; current?: WeatherCurrent; daily?: WeatherDay[]; hourly?: WeatherHour[]; cod?: number | string; message?: string }
 export interface ForecastDay { High: number | null; Low: number | null; Condition: number }
 export interface ForecastHour { Temp: number | null; Condition: number }
@@ -18,6 +27,8 @@ export interface WeatherData {
   hourly: ForecastHour[];
   tomorrowRain: number | null;
   nextHourRain: number | null;
+  /** Percentages for providers that forecast separate daytime/nighttime periods. */
+  tomorrowRainByPeriod?: { daytime: number | null; nighttime: number | null };
 }
 export interface SunData { sunrise: number | null; sunset: number | null; tomorrow: number | null }
 export interface LocationData { latitude?: number; longitude?: number; locality?: string | null; cacheExpired?: boolean }
@@ -73,6 +84,10 @@ export function parseWeatherResponse(value: unknown): WeatherResponse | null {
     if (finiteNumber(source.sunrise)) day.sunrise = source.sunrise;
     if (finiteNumber(source.sunset)) day.sunset = source.sunset;
     if (finiteNumber(source.pop)) day.pop = source.pop;
+    for (const field of ['daytimePop', 'nighttimePop'] as const) {
+      const probability = source[field];
+      if (finiteNumber(probability) && probability >= 0 && probability <= 1) day[field] = probability;
+    }
     const conditions = weatherConditions(source.weather);
     if (conditions) day.weather = conditions;
     return day;

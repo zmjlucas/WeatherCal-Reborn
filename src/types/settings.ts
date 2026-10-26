@@ -24,6 +24,8 @@ export interface LocalizationSettings {
   nightGreeting: string;
   nextHourLabel: string;
   tomorrowLabel: string;
+  daytimeRainLabel: string;
+  nighttimeRainLabel: string;
   noEventMessage: string;
   noRemindersMessage: string;
   durationMinute: string;
@@ -170,6 +172,8 @@ export function settingsValues(schema: EditingSettings): ParsedSettings {
       nightGreeting: schema.localization.nightGreeting.val,
       nextHourLabel: schema.localization.nextHourLabel.val,
       tomorrowLabel: schema.localization.tomorrowLabel.val,
+      daytimeRainLabel: schema.localization.daytimeRainLabel.val,
+      nighttimeRainLabel: schema.localization.nighttimeRainLabel.val,
       noEventMessage: schema.localization.noEventMessage.val,
       noRemindersMessage: schema.localization.noRemindersMessage.val,
       durationMinute: schema.localization.durationMinute.val,

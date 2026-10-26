@@ -136,7 +136,16 @@ export default {
       this.tintIcon(subRain, this.format.smallTemp, true)
       subRainStack.addSpacer(5)
 
-      this.provideText(this.displayNumber(showNextHour ? weatherData.nextHourRain : weatherData.tomorrowRain,"--") + "%", subRainStack, this.format.smallTemp)
+      const periods = !showNextHour && weatherData.tomorrowRainByPeriod
+      if (periods) {
+        const periodStack = subRainStack.addStack()
+        periodStack.layoutVertically()
+        this.provideText(this.localization.daytimeRainLabel + " " + this.displayNumber(periods.daytime, "--") + "%", periodStack, this.format.smallTemp)
+        periodStack.addSpacer(2)
+        this.provideText(this.localization.nighttimeRainLabel + " " + this.displayNumber(periods.nighttime, "--") + "%", periodStack, this.format.smallTemp)
+      } else {
+        this.provideText(this.displayNumber(showNextHour ? weatherData.nextHourRain : weatherData.tomorrowRain,"--") + "%", subRainStack, this.format.smallTemp)
+      }
     }
   }
 };
