@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Release uploads now include `WeatherCal-Reborn-v<version>.js` and its SHA-256 checksum, while retaining `one.js` for existing automatic-update URLs.
+
 ## [0.1.0] - 2026-10-26
 
 Initial beta release. On-device Scriptable verification is still required; automated weather-provider tests use offline doubles.

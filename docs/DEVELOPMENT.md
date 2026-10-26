@@ -122,7 +122,7 @@ Keep each commit focused on one responsibility and include its relevant tests. U
 
 ## Releases
 
-Keep `package.json` on Semantic Versioning. Move the Unreleased changelog entries to the release version/date before publication. CI checks changes and uploads the built scripts as an artifact. When a maintainer publishes a release tagged `v<package.json version>`, a separate job attaches `one.js`, `weather-cal-converter.js` and `SHA256SUMS` to that release. No release is created automatically by a commit, and no release was published as part of this refactor.
+Keep `package.json` on Semantic Versioning. Move the Unreleased changelog entries to the release version/date before publication. CI checks changes and uploads the built scripts as an artifact. When a maintainer publishes a release tagged `v<package.json version>`, a separate job attaches `WeatherCal-Reborn-v<version>.js`, `one.js`, `weather-cal-converter.js` and `SHA256SUMS` to that release. The versioned script is a byte-identical copy of `one.js`; the unversioned name remains available for existing automatic-update URLs. The release checksum manifest covers all three scripts. Normal builds and CI artifacts retain their original filenames. No release is created automatically by a commit, and no release was published as part of this refactor.
 
 
 ## Weather providers
