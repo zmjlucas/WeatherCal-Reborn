@@ -4,13 +4,14 @@ Compatibility reference: the project linked in the [README credits](../README.md
 
 | Feature | Implementation | Behavioral coverage |
 | --- | --- | --- |
-| Setup, permissions, API signup/key entry, preview, preferences, updates, export/import, reset | `src/setup/` | setup and distribution tests |
+| Setup, permissions, provider/credential selection, preview, preferences, updates, export/import, reset | `src/setup/` | setup and distribution tests |
 | Local/iCloud standalone widget, protected updates, duplicate widgets, custom object | `src/entry.ts`, `src/widget.ts` | integration and layout tests |
 | Solid, automatic/custom gradient, light/dark Photos images, custom backgrounds | `src/widget.ts`, `src/core/gradient.ts`, `src/setup/backgrounds.ts` | layout/setup/distribution tests |
 | Text DSL, ASCII rows/columns, dimensions, alignment, fixed/flexible spaces, custom dispatch | `src/layout/engine.ts` | layout tests |
 | Text/enum/bool/font/multi-value/multi-select editing; localization; default merging | `src/preferences/` | preference tests |
 | Date sizes, greetings, events, reminders, calendar/list colors, empty-state behavior, deep links | `src/items/calendar.ts`, `basic.ts`, `src/data/agenda.ts` | item and data tests |
 | Current/future weather, daily/hourly forecasts, rain, high/low bar, sunrise/sunset | `src/items/weather.ts`, `forecast.ts`, `sun.ts`, `src/data/weather.ts` | item/data/core tests |
+| QWeather default, provider switching, secure QWeather keys, rate cooldown | `src/data/qweather.ts`, `qweather-response.ts`, `src/setup/weather-provider.ts` | QWeather and provider setup tests |
 | Battery level/charging, ISO week, text and SF Symbols | `src/items/basic.ts`, `src/core/drawing.ts` | item/core tests |
 | RSS/Atom news, dates, links, COVID numeric tokens | `src/items/feeds.ts`, `src/data/feeds.ts` | item/data tests |
 | Location/reverse geocoding, locale/units, API versions, bounded cache fallback | `src/data/`, `src/core/storage.ts` | data/core tests |
@@ -19,7 +20,7 @@ Compatibility reference: the project linked in the [README credits](../README.md
 
 The 17 content item names are `date`, `greeting`, `events`, `reminders`, `current`, `future`, `forecast`, `daily`, `hourly`, `sunrise`, `sunset`, `covid`, `text`, `battery`, `week`, `symbol`, and `news`. `forecast`/`daily` are aliases; sunrise/sunset remain automatic unless their separate-elements preference is enabled. Layout directives include `row`, `column`, `space`, `left`, `right`, and `center`; alignment helpers remain exposed to custom code.
 
-All original preference categories remain: widget, localization, font, date, events, reminders, sunrise, weather, covid, symbol and news. Existing category/item names and default values remain compatible.
+All original preference categories remain: widget, localization, font, date, events, reminders, sunrise, weather, covid, symbol and news. Existing category/item names remain compatible. The new weather provider preference defaults to QWeather.
 
 ## Correctness changes
 
@@ -31,11 +32,11 @@ Export/import preserves exact script code, punctuation and custom functions, and
 
 The existing `weather-cal-<name>`, `weather-cal-preferences-<name>`, `weather-cal-api-key`, `weather-cal-api-path`, `weather-cal-setup`, `weather-cal-location`, and `Weather Cal/<name>.jpg` conventions remain.
 
-Weather/sun caches now include coordinates, units and locale in their identity. News caches use the full feed URL, while COVID caches include endpoint and country. Hashed bounded filenames and an identity field prevent cross-widget contamination. Old unscoped weather/COVID caches and URL-named news caches remain untouched but are not reused because their settings cannot be established. The first refactored run needs a network fetch for those caches; old preferences and location are preserved.
+Weather/sun caches include provider, coordinates, units and locale in their identity; QWeather also includes a random host-specific namespace, with the host mapping kept in Keychain. News caches use the full feed URL, while COVID caches include endpoint and country. Hashed bounded filenames and an identity field prevent cross-widget contamination. Old unscoped weather/COVID caches and URL-named news caches remain untouched but are not reused because their settings cannot be established. The first refactored run needs a network fetch for those caches; old preferences and location are preserved.
 
 ## External service boundaries
 
-Weather requires a working OpenWeather key and access to the selected One Call product; endpoint validation retains 3.0 and legacy 2.5 behavior. Tests use recorded-shape fixtures and simulated errors, not a paid live subscription. See [OpenWeather One Call](https://openweathermap.org/api/one-call-3).
+Weather uses QWeather by default, with OpenWeather selectable. QWeather runtime requires a dedicated API Host and API Key; tests use only synthetic credentials and simulated current/hourly/daily and error responses, with no live API requests or quota usage. OpenWeather requires access to One Call; its existing 3.0 and legacy 2.5 validation behavior is retained and tested with fixtures. Neither provider was tested on an iPhone in this change. See [weather setup and rate handling](DEVELOPMENT.md#weather-providers).
 
 The original COVID Heroku endpoint returned 404 during this audit. The default replacement uses the compatible [disease.sh endpoint implementation](https://github.com/disease-sh/API/blob/master/routes/v3/covid-19/apiWorldometers.js), with an optional full endpoint override in preferences. The default Worldometer source stopped updating on **April 13, 2024**, so this item displays historical statistics, not current surveillance. Live access to disease.sh could not be verified from this environment (HTTP 403). See [Worldometer's source notice](https://www.worldometers.info/coronavirus/).
 

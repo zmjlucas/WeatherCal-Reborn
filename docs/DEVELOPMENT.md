@@ -29,7 +29,7 @@ consecutive build identity, and the 500-line source module limit.
 3. Rename the installed script before setup if desired. Each script name owns
    separate preferences and backgrounds.
 4. Run it to choose a background, grant desired permissions, and optionally
-   enter an OpenWeather key. Select that script in a Scriptable home-screen widget.
+   choose QWeather (default) or OpenWeather and configure its credentials. Select that script in a Scriptable home-screen widget.
 5. Edit `layout` and `custom` between the `WeatherCal: user begin v1` and
    `WeatherCal: user end v1` comments. Keep all four boundary comments intact.
    The generated engine occupies its own marked region.
@@ -52,8 +52,9 @@ There is no automatic replacement of legacy installations. Save a backup of
 your current script and its custom code first. Manually install `one.js` under
 the **same Scriptable name** and storage location, and copy your original layout
 and custom object into the new editable region. Existing preference/background
-filenames and API-key/cache formats remain compatible; you do not need to clear
-or re-enter settings. Leave the shared legacy engine available while other old
+filenames and OpenWeather key files remain compatible. Weather now defaults to
+QWeather when no provider is stored: choose OpenWeather in Weather preferences
+to keep using an existing saved key, or configure QWeather through Other settings. Leave the shared legacy engine available while other old
 scripts still use it.
 
 ## Custom items and backgrounds
@@ -88,7 +89,18 @@ The optional `dist/weather-cal-converter.js` converts a conventional single-List
 - `src/scriptable/`: independent converter interface.
 - `scripts/`: deterministic build and source checks.
 
-Tests use realistic Scriptable boundary doubles for filesystem, UI and drawing APIs. They exercise production modules and generated scripts, but do not prove actual iOS typography, widget sizing, permissions UI, network access or home-screen refresh behavior. No paid API credentials are used in the suite.
+Tests use realistic Scriptable boundary doubles for filesystem, UI and drawing APIs. They exercise production modules and generated scripts, but do not prove actual iOS typography, widget sizing, permissions UI, network access or home-screen refresh behavior. No real API credentials are used in the suite.
+
+### QWeather tests: simulated responses only
+
+Run `pnpm exec vitest run tests/qweather.test.ts tests/weather-provider-setup.test.ts`.
+These tests use hand-written current/hourly/daily payloads and simulated error
+responses, including HTTP 429 and `Retry-After`. Keys and hosts are synthetic;
+Keychain is an in-memory test double. The test `Request` only invokes the supplied
+fixture callback and throws `Offline` if it is missing; it has no network fallback.
+Tests and CI must not read real account credentials, call QWeather, or consume its
+quota. Do not replace fixtures with live responses or run account smoke tests as
+part of testing, even when credentials have been supplied separately.
 
 ## On-device acceptance
 
@@ -111,3 +123,76 @@ Keep each commit focused on one responsibility and include its relevant tests. U
 ## Releases
 
 Keep `package.json` on Semantic Versioning. Move the Unreleased changelog entries to the release version/date before publication. CI checks changes and uploads the built scripts as an artifact. When a maintainer publishes a release tagged `v<package.json version>`, a separate job attaches `one.js`, `weather-cal-converter.js` and `SHA256SUMS` to that release. No release is created automatically by a commit, and no release was published as part of this refactor.
+
+
+## Weather providers
+
+Run the script → **Other settings → Weather provider / API credentials**. Choose
+**QWeather (default)** or **OpenWeather**. The choice is saved per widget;
+**Edit preferences → Weather → Weather provider** can also switch providers
+without re-entering an already stored key. Missing provider preferences default
+to QWeather, including older installations. No silent cross-provider fallback occurs.
+
+For QWeather, enter your dedicated API Host from QWeather Console → Settings and
+your API Key. A bare hostname or an HTTPS origin is accepted; paths, HTTP, ports
+and other domains are rejected. Both the host and key are stored in [Scriptable Keychain](https://docs.scriptable.app/keychain/).
+The host is associated with the widget name; keys are shared by host and sent only
+in `X-QW-Api-Key`. Saving settings makes no test requests. Neither credential is
+exported or saved in preference/cache files. Cache identities use a random
+[UUID](https://docs.scriptable.app/uuid/) whose host mapping stays in Keychain.
+Imported or renamed widgets must configure their host and key. The existing shared
+OpenWeather key/path files and validation helpers remain supported.
+
+The adapter calls `weather/v1/current`, `hourly?hours=24`, and `daily?days=8`.
+Coordinates are rounded to two decimals. It converts metric temperatures to the
+widget's unit selection, maps weather conditions, and aligns hourly slots using
+forecast timestamps. Daily values include sunrise/sunset; daytime/nighttime rain
+probabilities are not treated as an all-day probability, so QWeather's tomorrow
+rain percentage displays `--`. This change supports existing weather items; it
+does not add AQI, alerts or minutely-rain items. QWeather name/link and returned
+attribution statements appear in the widget footer when QWeather data is used.
+
+### Request budget and failures
+
+- Cold fetch: three sequential requests, spaced at least one second apart.
+- Weather and sunrise reuse a 15-minute cache keyed by provider, host, rounded
+  coordinates, language and units. Concurrent consumers in the same script are
+  queued by host and recheck the cache. Repeated previews reuse it.
+- A failed request immediately stops the remaining endpoints; there is no retry
+  loop. A local host-wide cooldown survives later widget launches, independently
+  of local/iCloud preference storage. Generic failures start at 15 minutes and
+  double up to 6 hours. `Retry-After` seconds and HTTP dates can extend this wait.
+- HTTP 400/401/403 wait at least 24 hours; a different saved key clears the old
+  cooldown. An explicit monthly-quota error waits until the next month (with a
+  conservative one-day margin). Re-saving the same key does not bypass a limit.
+- During errors, cached weather is usable for up to 60 minutes and sun data for
+  up to 24 hours; older data becomes unavailable. The widget displays a short
+  error message instead of retrying continually.
+- Host cooldown files are best-effort cross-process coordination, not an atomic
+  lock or an account-wide quota manager. Multiple devices/apps share the actual
+  provider quota. One location/language/unit combination refreshed every
+  15 minutes uses about 8,640 requests per 30 days before errors or other usage;
+  this is a request-count estimate, not a guaranteed iOS refresh schedule.
+
+See the official [API Host](https://dev.qweather.com/docs/configuration/api-host/),
+[error contract](https://dev.qweather.com/docs/resource/error-code/),
+[language codes](https://dev.qweather.com/docs/resource/language/), and
+[pricing](https://dev.qweather.com/docs/finance/pricing/).
+The current API-Key policy has differing future limit dates in official pages;
+this adapter implements API Key authentication, not JWT signing. Verify the
+account's limits when configuring a deployment.
+
+### Historical manual verification on 2026-10-26
+
+This records a one-off check performed before the simulated-response-only testing
+requirement. It is not a test prerequisite or an instruction to repeat live calls.
+
+Using the user-supplied account, the three weather/v1 endpoints returned HTTP 200
+for the documented Beijing coordinate (39.92, 116.41): real-time data, 24 hourly
+entries and 8 daily entries. Three formal requests ran sequentially at least
+1.1 seconds apart and stopped-on-error behavior was enabled. One earlier
+connectivity probe returned compressed data before the test harness handled
+Gzip. No real limit was deliberately triggered; 429, monthly quotas and recovery
+are tested with simulated HTTP responses. Production parsing accepted the live
+payloads. Credentials and live responses are not stored in the repository.
+These are HTTP and local-code checks, not an iPhone Scriptable runtime test.

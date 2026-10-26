@@ -14,6 +14,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- QWeather as the default weather provider, with per-widget selection of QWeather or OpenWeather and separate credential configuration.
+- QWeather current, hourly and daily weather, timestamp-aligned forecasts, source attribution, cached requests and persistent rate-limit cooldowns.
+
 - Full upstream Weather-Cal functionality in focused JavaScript modules, preserving all 71 public methods and all 101 existing preferences.
 - All widget items, both layout syntaxes, localization, preference editing, backgrounds, setup, preview, export/import, updates, reset and the converter companion.
 - Dependency-free Scriptable builds, SHA-256 checksums, behavioral tests and CI/release-asset workflow for version 1.0.0.
