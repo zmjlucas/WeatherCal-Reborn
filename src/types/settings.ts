@@ -101,6 +101,7 @@ export interface SunriseSettings {
 }
 
 export interface WeatherSettings {
+  provider: string;
   locale: string;
   showLocation: boolean;
   horizontalCondition: boolean;
@@ -260,6 +261,7 @@ export function settingsValues(schema: EditingSettings): ParsedSettings {
       separateElements: schema.sunrise.separateElements.val,
     },
     weather: {
+      provider: schema.weather.provider.val,
       locale: schema.weather.locale.val,
       showLocation: schema.weather.showLocation.val,
       horizontalCondition: schema.weather.horizontalCondition.val,

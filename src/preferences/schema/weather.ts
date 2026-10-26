@@ -1,5 +1,6 @@
 // Licensed under MIT. See LICENSE.
 
+import { qweatherLanguages } from '../../data/qweather-locale';
 import type { WeatherCalContext } from '../../types/context';
 import type { EditingCategory, GetCalendars, WeatherSettings } from '../../types/settings';
 
@@ -7,12 +8,19 @@ export default async function(this: WeatherCalContext, getFromCalendar: GetCalen
   return {
       weather: {
         name: "Weather",
+        provider: {
+          val: "qweather",
+          name: "Weather provider",
+          description: "Configure credentials in Other settings after choosing a provider.",
+          type: "enum",
+          options: ["qweather", "openweather"],
+        },
         locale: {
           val: "",
-          name: "OpenWeather locale",
-          description: "If you are encountering issues with your weather data, try choosing an OpenWeather locale code.",
+          name: "Weather language",
+          description: "Leave blank for device language. Legacy language codes are translated for QWeather.",
           type: "enum",
-          options: this.getOpenWeatherLocaleCodes(),
+          options: [...new Set([...this.getOpenWeatherLocaleCodes(), ...qweatherLanguages])],
         },
         showLocation: {
           val: false,

@@ -12,6 +12,7 @@ async function engine(t: TestContext, options: EnvironmentOptions = {}) {
   const env = installScriptable(t, options);
   const service = await initializedContext(env);
   service.locale = 'en_US';
+  service.settings.weather.provider = 'openweather';
   Object.assign(service.settings.widget, { units: 'metric', updateLocation: '10' });
   Object.assign(service.settings.events, { selectCalendars: [], numberOfDays: '1', showTomorrow: '0', showAllDay: true, minutesAfter: '', numberOfEvents: '20' });
   Object.assign(service.settings.reminders, { selectLists: [], showWithoutDueDate: true, showOverdue: true, todayOnly: false, numberOfReminders: '20' });
@@ -366,4 +367,14 @@ test('Atom distinguishes literal text titles from encoded HTML titles', async t 
   const { service } = await engine(t, { request: async () => xml });
   await service.setupNews();
   assert.deepEqual(required(service.data.news).map(item => item.title), ['About <em> tags', 'Weather today']);
+});
+
+test('OpenWeather translates language choices shared with QWeather before requesting data', async t => {
+  const { service, requests } = await engine(t, { request: async () => weatherFixture() });
+  service.settings.weather.locale = 'zh-hant';
+  await service.setupWeather();
+  assert.equal(new URL(required(requests.at(-1))).searchParams.get('lang'), 'zh_tw');
+  service.settings.weather.locale = 'ko';
+  await service.setupWeather();
+  assert.equal(new URL(required(requests.at(-1))).searchParams.get('lang'), 'kr');
 });

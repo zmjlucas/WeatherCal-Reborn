@@ -1,8 +1,10 @@
 // Licensed under MIT. See LICENSE.
 
+import { loadQWeather } from './qweather';
+import { qweatherLocale } from './qweather-locale';
 import type { WeatherCalContext } from '../types/context';
 import { parseWeatherResponse } from '../types/data';
-import type { WeatherResponse } from '../types/data';
+import type { WeatherResponse, WeatherHour } from '../types/data';
 import { finiteNumber } from '../types/json';
 
 export default {
@@ -21,9 +23,21 @@ export default {
       locale = candidates.find(value => safeLocales.includes(value)) || 'en';
     }
     const { latitude, longitude } = this.data.location || {};
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return { locale, response: null };
+    if (!finiteNumber(latitude) || !finiteNumber(longitude)) return { locale, response: null };
+    if (Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return { locale, response: null };
+    if (this.settings.weather.provider !== 'openweather') {
+      locale = qweatherLocale(forced || this.locale || Device.locale());
+      const response = await loadQWeather(this, latitude, longitude, locale, maxAge);
+      this.data.weatherAttributions = response?.attributions || [];
+      return { locale, response };
+    }
+    const languageAliases: Record<string, string> = { zh: 'zh_cn', zh_hans: 'zh_cn', zh_hant: 'zh_tw', ko: 'kr', cs: 'cz', nb: 'no' };
+    locale = languageAliases[locale] || locale;
+    if (!safeLocales.includes(locale)) locale = 'en';
+    delete this.data.weatherAttributions;
+    delete this.data.weatherError;
     const units = this.settings.widget.units;
-    const identity = JSON.stringify([latitude, longitude, units, locale]);
+    const identity = JSON.stringify(['openweather', latitude, longitude, units, locale]);
     const path = this.getDataCachePath('cache', identity);
     const cache = this.getCache(path, minAge, maxAge);
     let response = cache?.identity === identity ? parseWeatherResponse(cache.response) : null;
@@ -58,7 +72,13 @@ export default {
     const { locale, response } = await this.loadWeatherData(1, 60);
     const current = response?.current;
     const daily = response?.daily || [];
-    const hourly = response?.hourly || [];
+    const suppliedHours = response?.hourly || [];
+    const hourStart = Math.floor(this.now.getTime() / 3600000) * 3600;
+    // QWeather starts at the next available forecast hour. Re-align cached data
+    // each render rather than assuming index 1 always means the next hour.
+    const hourly: WeatherHour[] = this.settings.weather.provider !== 'openweather' && suppliedHours.some(hour => hour.dt !== undefined)
+      ? Array.from({ length: 8 }, (_, index) => suppliedHours.find(hour => hour.dt === hourStart + index * 3600) || (index === 0 ? current || {} : {}))
+      : suppliedHours;
     const condition = current?.weather?.[0];
     const english = locale.split('_')[0] === 'en';
     this.data.weather = {

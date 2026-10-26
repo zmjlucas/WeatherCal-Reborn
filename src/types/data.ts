@@ -3,9 +3,9 @@ import { finiteNumber, isRecord, record } from './json';
 /** Provider DTOs contain only fields consumed by the widget. */
 export interface WeatherCondition { id?: number; main?: string; description?: string }
 export interface WeatherCurrent { temp?: number; weather?: WeatherCondition[] }
-export interface WeatherHour extends WeatherCurrent { pop?: number }
+export interface WeatherHour extends WeatherCurrent { dt?: number; pop?: number }
 export interface WeatherDay { temp?: { max?: number; min?: number }; weather?: WeatherCondition[]; sunrise?: number; sunset?: number; pop?: number }
-export interface WeatherResponse { current?: WeatherCurrent; daily?: WeatherDay[]; hourly?: WeatherHour[]; cod?: number | string; message?: string }
+export interface WeatherResponse { attributions?: string[]; current?: WeatherCurrent; daily?: WeatherDay[]; hourly?: WeatherHour[]; cod?: number | string; message?: string }
 export interface ForecastDay { High: number | null; Low: number | null; Condition: number }
 export interface ForecastHour { Temp: number | null; Condition: number }
 export interface WeatherData {
@@ -25,6 +25,8 @@ export interface NewsListing { title: string; link: string; date: string | null 
 /** COVID tokens intentionally support additional numeric provider fields. */
 export type CovidData = Record<string, number>;
 export interface WidgetData {
+  weatherError?: string;
+  weatherAttributions?: string[];
   location?: LocationData;
   weather?: WeatherData;
   sun?: SunData;
@@ -49,6 +51,7 @@ function weatherConditions(value: unknown): WeatherCondition[] | undefined {
 function weatherHour(value: unknown): WeatherHour {
   const source = record(value);
   const hour: WeatherHour = {};
+  if (finiteNumber(source.dt)) hour.dt = source.dt;
   if (finiteNumber(source.temp)) hour.temp = source.temp;
   if (finiteNumber(source.pop)) hour.pop = source.pop;
   const conditions = weatherConditions(source.weather);
@@ -59,6 +62,7 @@ function weatherHour(value: unknown): WeatherHour {
 export function parseWeatherResponse(value: unknown): WeatherResponse | null {
   if (!isRecord(value)) return null;
   const response: WeatherResponse = {};
+  if (Array.isArray(value.attributions)) response.attributions = value.attributions.filter((entry): entry is string => typeof entry === 'string');
   if (typeof value.cod === 'string' || finiteNumber(value.cod)) response.cod = value.cod;
   if (typeof value.message === 'string') response.message = value.message;
   if (isRecord(value.current)) response.current = weatherHour(value.current);
