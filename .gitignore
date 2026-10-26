@@ -7,3 +7,6 @@ docs/superpowers/
 
 # Generated Node test API declarations; production is checked separately.
 .typecheck/
+
+# Local copies of installed scripts may contain private user edits.
+.icloud-backups/

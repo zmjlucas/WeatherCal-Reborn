@@ -19,6 +19,7 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
+    "upload:icloud": "node scripts/upload-icloud.mjs",
     "typecheck": "tsc -p tsconfig.json && node scripts/prepare-test-types.mjs && tsc -p tsconfig.test.json",
     "test": "vitest run",
     "test:watch": "vitest",
