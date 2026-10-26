@@ -10,3 +10,5 @@ docs/superpowers/
 
 # Local copies of installed scripts may contain private user edits.
 .icloud-backups/
+
+.env
