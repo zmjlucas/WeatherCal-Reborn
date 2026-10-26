@@ -31,8 +31,8 @@ export async function buildArtifacts() {
     return result.outputFiles[0].text;
   }
   const combined = await bundle('src/entry.ts');
-  const begin = '/*! WeatherCal: user begin v1 */';
-  const end = '/*! WeatherCal: user end v1 */';
+  const begin = '/*! WeatherCal: user begin */';
+  const end = '/*! WeatherCal: user end */';
   const start = combined.indexOf(begin), finish = combined.indexOf(end);
   if (start < 0 || finish < start || combined.indexOf(begin, start + 1) !== -1 || combined.indexOf(end, finish + 1) !== -1) {
     throw new Error('esbuild did not retain the editable user region.');
@@ -40,10 +40,10 @@ export async function buildArtifacts() {
   const user = combined.slice(start + begin.length, finish);
   const engine = combined.slice(0, start) + combined.slice(finish + end.length);
   const artifacts = {
-    'one.js': metadata('calendar') + '// WeatherCal: user begin v1\n' + user +
-      '// WeatherCal: user end v1\n// WeatherCal: engine begin v1\n' + engine +
+    'one.js': metadata('calendar') + '// WeatherCal: user begin\n' + user +
+      '// WeatherCal: user end\n\n// !! DO NOT MODIFY CODE BELOW !!\n// WeatherCal: engine begin\n' + engine +
       notice + upstreamNotice + parserNotice + cldrNotice +
-      '// WeatherCal: engine end v1\n',
+      '// WeatherCal: engine end\n',
     'weather-cal-converter.js': metadata('magic') + await bundle('src/scriptable/converter.ts') + notice + upstreamNotice,
   };
   const SHA256SUMS = Object.entries(artifacts).map(([name, content]) =>

@@ -109,8 +109,8 @@ export function validateSource(source: string, filename = 'script.js'): void {
   inspectSource(source, filename);
 }
 
-const markers = ['// WeatherCal: user begin v1', '// WeatherCal: user end v1',
-  '// WeatherCal: engine begin v1', '// WeatherCal: engine end v1'] as const;
+const markers = ['// WeatherCal: user begin', '// WeatherCal: user end',
+  '// WeatherCal: engine begin', '// WeatherCal: engine end'] as const;
 
 export interface ScriptParts { prefix: string; user: string; engine: string }
 
@@ -125,7 +125,8 @@ export function splitScript(source: string): ScriptParts {
       !(first.end < second.start && second.end < third.start && third.end < fourth.start)) {
     throw new Error('Unrecognized script structure. Install one.js manually to migrate a legacy widget.');
   }
-  if (source.slice(second.end, third.start).trim() || source.slice(fourth.end).trim() ||
+  const separator = source.slice(second.end, third.start).trim();
+  if ((separator && separator !== '// !! DO NOT MODIFY CODE BELOW !!') || source.slice(fourth.end).trim() ||
       tree.body.some(node => !((node.start >= first.end && node.end <= second.start) ||
         (node.start >= third.end && node.end <= fourth.start)))) {
     throw new Error('Executable code outside the editable and generated regions.');
@@ -142,7 +143,7 @@ export function mergeScriptUpdate(installed: string, downloaded: string): string
   for (const name of userBindings) {
     if (engineBindings.has(name)) throw new Error(`The new engine conflicts with user variable ${name}.`);
   }
-  const combined = `${current.prefix}${markers[0]}${current.user}${markers[1]}\n${markers[2]}${next.engine}${markers[3]}\n`;
+  const combined = `${current.prefix}${markers[0]}${current.user}${markers[1]}\n\n// !! DO NOT MODIFY CODE BELOW !!\n${markers[2]}${next.engine}${markers[3]}\n`;
   splitScript(combined); // Detect collisions between new engine bindings and user edits.
   return combined;
 }

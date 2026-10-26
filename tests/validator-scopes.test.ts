@@ -22,15 +22,15 @@ test('function parameter defaults cannot use bindings declared only in the body'
 });
 
 test('editable and engine boundaries cannot divide a JavaScript statement', () => {
-  const source = '// Variables used by Scriptable.\n// WeatherCal: user begin v1\nfunction unfinished() {\n' +
-    '// WeatherCal: user end v1\n// WeatherCal: engine begin v1\n}\n// WeatherCal: engine end v1\n';
+  const source = '// Variables used by Scriptable.\n// WeatherCal: user begin\nfunction unfinished() {\n' +
+    '// WeatherCal: user end\n// WeatherCal: engine begin\n}\n// WeatherCal: engine end\n';
   expect(() => splitScript(source)).toThrow();
 });
 
 test('updates reject engine declarations that would overwrite user variables', () => {
   const source = (user: string, engine: string): string => '// Variables used by Scriptable.\n' +
-    `// WeatherCal: user begin v1\n${user}\n// WeatherCal: user end v1\n` +
-    `// WeatherCal: engine begin v1\n${engine}\n// WeatherCal: engine end v1\n`;
+    `// WeatherCal: user begin\n${user}\n// WeatherCal: user end\n` +
+    `// WeatherCal: engine begin\n${engine}\n// WeatherCal: engine end\n`;
   expect(() => mergeScriptUpdate(source('var helper = () => "mine";', 'var version = 1;'),
     source('var layout = "";', 'var helper = () => "engine";'))).toThrow();
   expect(() => mergeScriptUpdate(source('function custom() { var helper = 1; }', 'var version = 1;'),

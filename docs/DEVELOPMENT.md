@@ -30,8 +30,8 @@ consecutive build identity, and the 500-line source module limit.
    separate preferences and backgrounds.
 4. Run it to choose a background, grant desired permissions, and optionally
    choose QWeather (default) or OpenWeather and configure its credentials. Select that script in a Scriptable home-screen widget.
-5. Edit `layout` and `custom` between the `WeatherCal: user begin v1` and
-   `WeatherCal: user end v1` comments. Keep all four boundary comments intact.
+5. Edit `layout` and `custom` between the `WeatherCal: user begin` and
+   `WeatherCal: user end` comments. Keep all four boundary comments intact.
    The generated engine occupies its own marked region.
 
 Install `dist/weather-cal-converter.js` separately if you need conversion.

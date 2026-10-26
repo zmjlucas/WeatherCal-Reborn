@@ -1,6 +1,6 @@
 import type { CustomItems, LayoutInput } from './types/context';
 
-/*! WeatherCal: user begin v1 */
+/*! WeatherCal: user begin */
 // Edit this layout and custom object in your installed one.js.
 export const layout: LayoutInput = `
   row
@@ -20,4 +20,4 @@ export const layout: LayoutInput = `
 export const custom: CustomItems = {
   // Add custom items and backgrounds here. The engine is available as code.
 };
-/*! WeatherCal: user end v1 */
+/*! WeatherCal: user end */

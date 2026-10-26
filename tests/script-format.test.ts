@@ -18,10 +18,10 @@ test('updates preserve the installed metadata and user code byte for byte', () =
 test('updates reject incomplete, repeated and reordered boundaries', () => {
   const valid = scriptFixture();
   for (const invalid of [
-    valid.replace('// WeatherCal: user end v1', ''),
-    valid + '// WeatherCal: engine end v1\n',
-    valid.replace('// WeatherCal: user end v1', '// WeatherCal: engine end v1'),
-    valid.replace('// WeatherCal: engine begin v1', '// WeatherCal: user begin v1'),
+    valid.replace('// WeatherCal: user end', ''),
+    valid + '// WeatherCal: engine end\n',
+    valid.replace('// WeatherCal: user end', '// WeatherCal: engine end'),
+    valid.replace('// WeatherCal: engine begin', '// WeatherCal: user begin'),
   ]) assert.throws(() => mergeScriptUpdate(valid, invalid));
 });
 
