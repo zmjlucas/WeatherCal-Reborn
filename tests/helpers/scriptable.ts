@@ -57,7 +57,7 @@ export function asTable(table: TestTable): UITable { return table as unknown as 
 export interface EnvironmentOptions {
   responses?: Array<number | AlertResponse>; iCloud?: boolean; dark?: boolean; name?: string;
   table?: (table: TestTable) => void | Promise<void>;
-  request?: (url: string, kind: 'json' | 'string') => unknown | Promise<unknown>;
+  request?: (url: string, kind: 'json' | 'string', request: { headers: Record<string, string>; response: { statusCode: number; headers: Record<string, string> } }) => unknown | Promise<unknown>;
 }
 export function createEnvironment(options: EnvironmentOptions = {}) {
   const localStore = new Map<string, StoredFile>(); const cloudStore = new Map<string, StoredFile>();
@@ -124,14 +124,19 @@ export function createEnvironment(options: EnvironmentOptions = {}) {
     constructor() { alerts.push(this); }
     addAction(title: string) { this.actions.push(title); } addDestructiveAction(title: string) { this.actions.push(title); }
     addTextField(_placeholder: string, value = '') { this.fields.push(value); }
+    addSecureTextField(_placeholder: string, value = '') { this.fields.push(value); }
     textFieldValue(index: number) { return required(this.fields[index]); }
     async present() { const next = responses.shift(); if (typeof next === 'object') { this.fields = next.fields ?? this.fields; return next.index ?? 0; } return next ?? 0; }
     async presentAlert() { return this.present(); }
   }
+  const secrets = new Map<string, string>();
+  const delays: number[] = [];
   class Request {
+    headers: Record<string, string> = {};
+    response = { statusCode: 200, headers: {} as Record<string, string> };
     constructor(public url: string) { requests.push(url); }
-    async loadJSON() { if (!options.request) throw Error('Offline'); return options.request(this.url, 'json'); }
-    async loadString() { if (!options.request) throw Error('Offline'); return options.request(this.url, 'string'); }
+    async loadJSON() { if (!options.request) throw Error('Offline'); return options.request(this.url, 'json', this); }
+    async loadString() { if (!options.request) throw Error('Offline'); return options.request(this.url, 'string', this); }
   }
   const Script: { name: () => string; setWidget: (widget: TestNode) => void; complete: () => void; widget?: TestNode; completed?: boolean; completionCount: number } = {
     name: () => options.name ?? 'Test Widget', setWidget: widget => { Script.widget = widget; },
@@ -140,6 +145,9 @@ export function createEnvironment(options: EnvironmentOptions = {}) {
   const globals = {
     FileManager: Files, Color, Size, Rect, ListWidget: TestNode, Font, DateFormatter, RelativeDateTimeFormatter,
     Path, DrawContext, Alert, UITableRow: TestTableRow, UITable: class extends TestTable { constructor() { super(options.table); } }, Request, Script,
+    Keychain: { contains: (key: string) => secrets.has(key), get: (key: string) => required(secrets.get(key)), set: (key: string, value: string) => { secrets.set(key, value); } },
+    Timer: { schedule: (delay: number, _repeats: boolean, callback: () => void) => { delays.push(delay); callback(); } },
+    UUID: { string: () => crypto.randomUUID() },
     LinearGradient: class {}, SFSymbol: { named: (name: string) => ({ image: { symbol: name } }) },
     Device: { locale: () => 'en_US', batteryLevel: () => 0.57, isCharging: () => false },
     Calendar: { forEvents: async (): Promise<unknown[]> => [], forReminders: async (): Promise<unknown[]> => [] },
@@ -154,7 +162,7 @@ export function createEnvironment(options: EnvironmentOptions = {}) {
     WebView: class { url?: string; loadURL(url: string) { this.url = url; } async present() {} },
     config: { runsInApp: false, runsInWidget: true }, args: { widgetParameter: null as string | null }, console,
   };
-  return { globals, local, cloud, alerts, responses, requests, exports, downloads, Stack: TestNode as unknown as new () => TestNode & WidgetStack & ListWidget };
+  return { globals, local, cloud, alerts, responses, requests, exports, downloads, secrets, delays, Stack: TestNode as unknown as new () => TestNode & WidgetStack & ListWidget };
 }
 export type Environment = ReturnType<typeof createEnvironment>;
 export type Runtime = Environment['globals'];
