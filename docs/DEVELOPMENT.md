@@ -37,14 +37,17 @@ consecutive build identity, and the 500-line source module limit.
 Install `dist/weather-cal-converter.js` separately if you need conversion.
 Both scripts start with Scriptable metadata. `dist/` is generated and ignored.
 
-The Update code menu downloads `one.js` from the latest WeatherCal-Reborn
-release, validates its boundaries and JavaScript syntax, preserves the installed
+The Update code menu queries GitHub's latest stable release metadata and downloads
+the matching `WeatherCal-Reborn-v<version>.js` asset, validates its boundaries and JavaScript syntax, preserves the installed
 metadata and user region exactly, and replaces only the engine region. Failed
 downloads or validation leave the existing script untouched. Preferences,
 background images and the script name are preserved. Release download URLs
 will work only once a maintainer publishes the new assets; until then use local
 builds. Reset requires explicit confirmation and restores the downloaded
-script's default user region, then removes only this widget's data.
+script's default user region, then removes only this widget's data. Pre-releases
+are not selected by the latest stable release endpoint. Older installations that
+use the fixed `one.js` download URL require a one-time manual upgrade, preserving
+the installed script name and editable user region.
 
 ### Moving an existing dual-file installation
 
@@ -122,7 +125,7 @@ Keep each commit focused on one responsibility and include its relevant tests. U
 
 ## Releases
 
-Keep `package.json` on Semantic Versioning. Move the Unreleased changelog entries to the release version/date before publication. CI checks changes and uploads the built scripts as an artifact. When a maintainer publishes a release tagged `v<package.json version>`, a separate job attaches `WeatherCal-Reborn-v<version>.js`, `one.js`, `weather-cal-converter.js` and `SHA256SUMS` to that release. The versioned script is a byte-identical copy of `one.js`; the unversioned name remains available for existing automatic-update URLs. The release checksum manifest covers all three scripts. Normal builds and CI artifacts retain their original filenames. No release is created automatically by a commit, and no release was published as part of this refactor.
+Keep `package.json` on Semantic Versioning. Move the Unreleased changelog entries to the release version/date before publication. CI checks changes and uploads the built scripts as an artifact. When a maintainer publishes a release tagged `v<package.json version>`, a separate job attaches only `WeatherCal-Reborn-v<version>.js`, a byte-identical copy of the built `one.js`. Together with GitHub's automatic Source code (zip) and Source code (tar.gz), the release has three downloadable files. Do not upload `one.js`, `weather-cal-converter.js`, or `SHA256SUMS` as release assets. Normal builds and CI artifacts retain their original filenames and checksum manifest. No release is created automatically by a commit, and no release was published as part of this refactor.
 
 
 ## Weather providers

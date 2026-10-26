@@ -59,10 +59,9 @@ jobs:
         working-directory: dist
         run: |
           cp one.js "WeatherCal-Reborn-${RELEASE_TAG}.js"
-          sha256sum "WeatherCal-Reborn-${RELEASE_TAG}.js" one.js weather-cal-converter.js > SHA256SUMS
-      - name: Attach installable scripts
+      - name: Attach versioned widget script
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: gh release upload "$RELEASE_TAG" "dist/WeatherCal-Reborn-${RELEASE_TAG}.js" dist/one.js dist/weather-cal-converter.js dist/SHA256SUMS --repo "$GH_REPO" --clobber
+        run: gh release upload "$RELEASE_TAG" "dist/WeatherCal-Reborn-${RELEASE_TAG}.js" --repo "$GH_REPO" --clobber

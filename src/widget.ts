@@ -2,6 +2,7 @@ import { parseBackground } from "./types/background";
 import type { Background } from "./types/background";
 import type { LayoutInput, CustomItems } from "./types/context";
 import type { WeatherCalContext } from "./types/context";
+import { latestReleaseUrl } from "./setup/distribution";
 
 export default {
   initialize(this: WeatherCalContext, name: string, iCloudInUse: boolean): void {
@@ -9,7 +10,7 @@ export default {
       this.fm = iCloudInUse ? FileManager.iCloud() : FileManager.local()
       this.bgPath = this.fm.joinPath(this.fm.libraryDirectory(), "weather-cal-" + this.name)
       this.prefPath = this.fm.joinPath(this.fm.libraryDirectory(), "weather-cal-preferences-" + name)
-      this.widgetUrl = "https://github.com/zmjlucas/WeatherCal-Reborn/releases/latest/download/one.js"
+      this.widgetUrl = latestReleaseUrl
       this.now = new Date()
       this.data = {}
       this.initialized = true

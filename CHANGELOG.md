@@ -8,7 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
-- Release uploads now include `WeatherCal-Reborn-v<version>.js` and its SHA-256 checksum, while retaining `one.js` for existing automatic-update URLs.
+- Releases upload only `WeatherCal-Reborn-v<version>.js`, alongside GitHub's automatic source ZIP and tar.gz archives. Local builds and CI artifacts still include the converter and checksums.
+- Update and reset discover the versioned script through the latest stable GitHub release metadata. Older installations using the fixed `one.js` URL require one manual upgrade.
 
 ## [0.1.0] - 2026-10-26
 
