@@ -56,8 +56,10 @@ export async function build() {
     if (!Object.hasOwn(artifacts, name)) await fs.rm(path.join(directory, name), { recursive: true, force: true });
   }
   for (const [name, content] of Object.entries(artifacts)) await fs.writeFile(path.join(directory, name), content, 'utf8');
-  console.log('Built dist/one.js, dist/weather-cal-converter.js and dist/SHA256SUMS');
   return artifacts;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await build();
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  await build();
+  console.log('Built dist/one.js, dist/weather-cal-converter.js and dist/SHA256SUMS');
+}

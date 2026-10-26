@@ -8,6 +8,11 @@ pnpm upload:icloud --check  # Fresh build and merged-source validation; does not
 pnpm upload:icloud          # Fresh build, then create the script or back up and update it
 ```
 
+Successful uploads print one `SUCCESS` badge followed by `Uploaded to target: <path>`.
+The badge uses green styling in color-capable terminals and plain text in redirected output.
+Project pnpm reporting is silent, hiding command echoes; scripts still print their own output and errors.
+Validation and backups still run even though their progress is not printed.
+
 Use the repository's pinned Node/pnpm versions and install its dependencies first. The macOS Swift toolchain (`/usr/bin/swift`, supplied with Xcode Command Line Tools) is also required. The first invocation may take longer while Swift populates its module cache. Terminal/Codex must have permission to access iCloud Drive. A sandbox denial is not evidence that iCloud itself is unavailable.
 
 The destination is always:
