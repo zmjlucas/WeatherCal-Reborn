@@ -128,6 +128,7 @@ export interface WeatherCalContext extends WidgetState {
   loadWeatherData(minAge: number, maxAge: number): Promise<{locale: string; response: WeatherResponse | null}>;
   setupWeather(): Promise<void>;
   setupSunrise(): Promise<void>;
+  setupRain(): Promise<void>;
   selectWeatherProvider(firstRun?: boolean): Promise<boolean>;
   getWeatherApiPath(newApiKey: string): Promise<string | WeatherResponse | null>;
   getWeatherApiPath(): Promise<string>;

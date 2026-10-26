@@ -1,4 +1,5 @@
 import { finiteNumber, isRecord, record } from './json';
+import type { RainForecast, RainOutlook } from '../data/rain-response';
 
 /** Provider DTOs contain only fields consumed by the widget. */
 export interface WeatherCondition { id?: number; main?: string; description?: string }
@@ -33,6 +34,7 @@ export interface WeatherData {
 export interface SunData { sunrise: number | null; sunset: number | null; tomorrow: number | null }
 export interface LocationData { latitude?: number; longitude?: number; locality?: string | null; cacheExpired?: boolean }
 export interface WidgetData {
+  rain?: { forecast: RainForecast | null; outlook: RainOutlook | null };
   weatherError?: string;
   weatherAttributions?: string[];
   location?: LocationData;

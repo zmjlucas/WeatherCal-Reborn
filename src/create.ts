@@ -13,6 +13,7 @@ import cache from './data/cache';
 import agenda from './data/agenda';
 import location from './data/location';
 import weather from './data/weather';
+import rain from './data/rain';
 import items from './items/index';
 import menu from './setup/menu';
 import onboarding from './setup/onboarding';
@@ -25,7 +26,7 @@ import type { WeatherCalContext } from './types/context';
 export function createWeatherCal(): WeatherCalContext {
   return Object.assign(new WidgetState(), {
     ...widget, ...layout, ...formatting, ...drawing, ...gradient, ...prompts, ...storage,
-    ...defaults, ...store, ...editor, ...cache, ...agenda, ...location, ...weather,
+    ...defaults, ...store, ...editor, ...cache, ...agenda, ...location, ...weather, ...rain,
     ...items, ...menu, ...onboarding, ...weatherProvider, ...backgrounds, ...distribution,
     // Clone mutable enum groups per instance without a JSON or assertion boundary.
     enum: { caps: { ...defaults.enum.caps }, icons: { ...defaults.enum.icons } },
