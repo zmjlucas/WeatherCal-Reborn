@@ -7,8 +7,5 @@ export const layout: LayoutInput = `
   auto(padding: 12, gap: 8)[date, current, future]
 `;
 
-export const custom: CustomItems = {
-  // Register measured modules under items: { name: { prepare(...) { ... } } }.
-  // See docs/LAYOUT.md for the ItemModule contract.
-};
+export const custom: CustomItems = {};
 /*! WeatherCal: user end */

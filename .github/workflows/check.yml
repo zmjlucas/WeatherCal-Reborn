@@ -30,6 +30,7 @@ jobs:
             dist/one.js
             dist/weather-cal-converter.js
             dist/SHA256SUMS
+            WeatherCal-Reborn-Setup.js
           if-no-files-found: error
 
   release-assets:
@@ -59,9 +60,13 @@ jobs:
         working-directory: dist
         run: |
           cp one.js "WeatherCal-Reborn-${RELEASE_TAG}.js"
-      - name: Attach versioned widget script
+      - name: Attach widget and setup scripts
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: gh release upload "$RELEASE_TAG" "dist/WeatherCal-Reborn-${RELEASE_TAG}.js" --repo "$GH_REPO" --clobber
+        run: |
+          gh release upload "$RELEASE_TAG" \
+            "dist/WeatherCal-Reborn-${RELEASE_TAG}.js" \
+            WeatherCal-Reborn-Setup.js \
+            --repo "$GH_REPO" --clobber

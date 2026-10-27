@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-27
+
+### Added
+
+- A copy-and-run Scriptable installer that downloads the latest stable versioned widget, saves it as `WeatherCal-Reborn.js` in the installer's local or iCloud storage, and preserves existing installations. After installation it attempts to remove itself and launch the widget, with manual fallback instructions.
+- README Quick Start instructions with a direct installer download link, plus a README link in the first-run welcome message.
+- `pnpm readme:sync` to generate the README installer snippet from `WeatherCal-Reborn-Setup.js`, and a read-only `pnpm readme:check` gate in local and CI checks.
+
+### Changed
+
+- Releases now attach `WeatherCal-Reborn-Setup.js` alongside `WeatherCal-Reborn-v<version>.js`; GitHub continues to provide source ZIP and tar.gz archives.
+- The editable widget region links to the configuration guide and clarifies the layout/customization comments.
+
+Installer behavior is covered by mocked local/iCloud tests; on-device Scriptable verification remains required.
+
 ## [0.2.0] - 2026-10-27
 
 This release changes the layout and custom-item contracts. Existing installations need a manual upgrade and migration of their editable user region. On-device Scriptable verification is still required; automated weather-provider tests use offline doubles.

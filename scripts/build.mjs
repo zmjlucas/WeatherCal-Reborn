@@ -37,7 +37,8 @@ export async function buildArtifacts() {
   if (start < 0 || finish < start || combined.indexOf(begin, start + 1) !== -1 || combined.indexOf(end, finish + 1) !== -1) {
     throw new Error('esbuild did not retain the editable user region.');
   }
-  const user = combined.slice(start + begin.length, finish);
+  const user = '\n// Check https://zmjlucas.github.io/WeatherCal-Reborn/guide/quick-start.html for guidance.\n' +
+    combined.slice(start + begin.length, finish).trimStart();
   const engine = combined.slice(0, start) + combined.slice(finish + end.length);
   const artifacts = {
     'one.js': metadata('calendar') + '// WeatherCal: user begin\n' + user +
