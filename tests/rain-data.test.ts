@@ -15,6 +15,7 @@ test('rain requests longitude first with header auth and reuses its cache across
     return rainPayload();
   } });
   await Promise.all([service.setupRain(), service.setupRain()]);
+  assert.equal(service.data.rain?.forecast?.summary, 'Rain in 20 minutes');
   assert.deepEqual(service.data.rain?.outlook, { state: 'starts', time: rainNow + 20 * 60000, kind: 'rain' });
   const second = await initializedContext();
   second.fm = local;
@@ -27,6 +28,21 @@ test('rain requests longitude first with header auth and reuses its cache across
     assert.equal((path + file.value).includes('fake-rain-key'), false);
     assert.equal((path + file.value).includes(rainHost), false);
   }
+});
+
+test('rain refreshes a fresh legacy cache without a summary while preserving its parsed forecast', async t => {
+  const { service, requests, local } = await rainContext(t);
+  await service.setupRain();
+  for (const [path, file] of local.store) {
+    if (!path.includes('rain-cache')) continue;
+    const cached = JSON.parse(file.value);
+    delete cached.response.summary;
+    file.value = JSON.stringify(cached);
+  }
+  await service.setupRain();
+  assert.equal(requests.length, 2);
+  assert.equal(service.data.rain?.forecast?.summary, 'Rain in 20 minutes');
+  assert.deepEqual(service.data.rain?.outlook, { state: 'starts', time: rainNow + 20 * 60000, kind: 'rain' });
 });
 
 for (const [name, amounts, state, minutes] of [

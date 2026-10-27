@@ -2,6 +2,7 @@ import { isRecord, record } from '../types/json';
 
 export interface RainForecast {
   updateTime: number;
+  summary: string | null;
   points: { time: number; amount: number; type: 'rain' | 'snow' }[];
   sources: string[];
 }
@@ -33,11 +34,12 @@ export function parseRainResponse(value: unknown): RainForecast | null {
     points.push({ time, amount, type: point.type });
   }
   const sources = record(value.refer).sources;
-  return { updateTime, points, sources: Array.isArray(sources) ? sources.filter((entry): entry is string => typeof entry === 'string') : [] };
+  const summary = typeof value.summary === 'string' && value.summary.trim() ? value.summary : null;
+  return { updateTime, summary, points, sources: Array.isArray(sources) ? sources.filter((entry): entry is string => typeof entry === 'string') : [] };
 }
 
-/** Recompute from absolute timestamps on every render; a cached relative summary
- * must never be reused as a fresh countdown or a fresh two-hour forecast. */
+/** Retain absolute-time assessment for custom displays and forecast validity;
+ * provider summary text is separate and is not recomputed here. */
 export function assessRain(forecast: RainForecast, now: number): RainOutlook | null {
   if (forecast.updateTime > now || now - forecast.updateTime > 15 * 60000) return null;
   const last = forecast.points[forecast.points.length - 1];
