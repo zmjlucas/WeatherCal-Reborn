@@ -1,5 +1,5 @@
 import type { WeatherCalContext } from '../types/context';
-import { finiteNumber } from '../types/json';
+import { finiteNumber, record } from '../types/json';
 import { getQWeatherHost, withQWeatherState } from './qweather-state';
 import { qweatherLocale } from './qweather-locale';
 import { parseRainResponse, assessRain } from './rain-response';
@@ -26,13 +26,14 @@ export default {
         const cached = this.getCache(path, 5, 15);
         fallback = cached?.identity === identity ? parseRainResponse(cached.response) : null;
         if (fallback && !assessRain(fallback, this.now.getTime())) fallback = null;
-        if (fallback && !cached?.cacheExpired) return fallback;
+        // Older caches omitted summary; refresh them once to populate the display.
+        if (fallback && !cached?.cacheExpired && 'summary' in record(cached?.response)) return fallback;
         const refreshed = await state.refresh(async request => {
           const fresh = parseRainResponse(await request('/v7/minutely/5m?location=' + encodeURIComponent(location) + '&lang=' + language));
           if (!fresh || !assessRain(fresh, this.now.getTime())) throw new Error('QWeather nowcast unavailable');
-          // Cache only validated forecast fields; no raw summaries, URLs or credentials.
+          // Cache validated forecast fields and provider text, without URLs or credentials.
           const response = {
-            code: '200', updateTime: new Date(fresh.updateTime).toISOString(),
+            code: '200', updateTime: new Date(fresh.updateTime).toISOString(), summary: fresh.summary,
             minutely: fresh.points.map(point => ({ fxTime: new Date(point.time).toISOString(), precip: String(point.amount), type: point.type })),
             refer: { sources: fresh.sources }
           };

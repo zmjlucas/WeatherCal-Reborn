@@ -15,7 +15,7 @@ Upstream reference: the project linked in the [README credits](../README.md#cred
 | Date sizes, greetings, events, reminders, calendar/list colors, empty-state behavior, deep links | `src/items/calendar.ts`, `basic.ts`, `src/data/agenda.ts` | item and data tests |
 | Current/future weather, daily/hourly forecasts, rain, high/low bar, sunrise/sunset | `src/items/weather.ts`, `forecast.ts`, `sun.ts`, `src/data/weather.ts` | item/data/core tests |
 | QWeather default, provider switching, secure QWeather keys, rate cooldown | `src/data/qweather.ts`, `qweather-response.ts`, `src/setup/weather-provider.ts` | QWeather and provider setup tests |
-| Near-term precipitation start/stop times, bounded dry/ongoing forecasts, rain/snow distinction and update time | `src/data/rain.ts`, `rain-response.ts`, `src/items/rain.ts` | rain data and item tests |
+| Near-term QWeather summary with source link and bounded forecast validity | `src/data/rain.ts`, `rain-response.ts`, `src/items/rain.ts` | rain data and item tests |
 | Battery level/charging, ISO week, text and SF Symbols | `src/items/basic.ts`, `src/core/drawing.ts` | item/core tests |
 | Location/reverse geocoding, locale/units, API versions, bounded cache fallback | `src/data/`, `src/core/storage.ts` | data/core tests |
 | Custom helper API, formatting, capitalization, fonts, colors and icon tint | `src/core/`, `src/create.ts` | core and integration tests |
@@ -79,4 +79,4 @@ device behavior still needs the acceptance steps in
 calibration. This version targets small/medium/large home-screen widgets;
 extra-large and lock-screen families need separate support.
 
-The `rain` item uses QWeather's China-only, five-minute precipitation forecast for the next two hours. It derives approximate absolute event times from positive five-minute amounts, distinguishes snow and mixed precipitation, and includes the provider update time. Invalid, missing or stale data displays unavailable rather than clear weather. Tests use synthetic minutely responses; no live minutely API call or iPhone validation has been performed. See [rain item usage](DEVELOPMENT.md#near-term-rain-item).
+The `rain` item uses QWeather's China-only, five-minute precipitation forecast for the next two hours. It displays the provider's summary text with a QWeather link; parsed forecast amounts and timestamps still determine data validity. It uses the configured widget refresh interval (15 minutes by default). Invalid, missing or stale data displays unavailable rather than clear weather. Tests use synthetic minutely responses; no live minutely API call or iPhone validation has been performed. See [rain item usage](DEVELOPMENT.md#near-term-rain-item).

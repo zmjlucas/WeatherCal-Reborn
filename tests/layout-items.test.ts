@@ -3,7 +3,7 @@ import { prepareItems } from '#source/items/registry';
 import type { ItemModule, LayoutNode, PreparedItem } from '#source/layout/types';
 import { initializedContext } from './helpers/context';
 import { installScriptable, texts, descendants, mockEvent, mockColor, TestNode } from './helpers/scriptable';
-import { rainContext, rainNow } from './helpers/rain';
+import { rainContext, rainPayload } from './helpers/rain';
 
 function item(name: string, id = 'root/0', parameter?: string): LayoutNode {
   return { type: 'item', name, id, source: { offset: 0, line: 1, column: 1 }, props: {}, options: {}, children: [], ...(parameter === undefined ? {} : { parameter }) };
@@ -106,16 +106,17 @@ test('long multilingual text and event titles require more height at narrow widt
   }
 });
 
-test('rain includes source/update text and exposes refresh as an effect without creating a widget', async t => {
+test('rain prepares provider summary and source link with measured geometry', async t => {
   const { service, Stack, requests } = await rainContext(t);
   service.formatTime = date => date.toISOString().slice(11, 16);
   const entry = (await prepareItems(item('rain'), service)).get('root/0')!;
   const rendered = render(entry, Stack);
-  expect(texts(rendered).join(' ')).toContain('Updated');
+  expect(texts(rendered)).toEqual(['Rain in 20 minutes']);
+  expect(entry.state).toBe('ready');
   expect(descendants(rendered).some(node => node.url === 'https://www.qweather.com/')).toBe(true);
-  expect(entry.effects.refreshAfterDate?.getTime()).toBe(rainNow + 300000);
   expect(requests).toHaveLength(1);
-  expect(entry.variants[0]!.measure(1000).requiredHeight).toBeGreaterThanOrEqual((Number(service.format.smallTemp!.size) + Number(service.format.tinyTemp!.size)) * 1.35);
+  const variant = entry.variants[0]!;
+  expect(variant.measure(50).requiredHeight).toBeGreaterThan(variant.measure(1000).requiredHeight);
 });
 
 test('empty and failing data have visible measured states', async t => {
@@ -189,4 +190,11 @@ test('custom modules receive named options once and share promise resources', as
   expect(calls).toEqual([{ label: 'one' }, { label: 'two' }]); expect(loads).toBe(1);
   expect(texts(render(prepared.get('root/0')!, Stack))).toEqual(['one:9']);
   await expect(prepareItems(item('custom'), host, { custom: { prepare: async () => ({ render() {} }) } as unknown as ItemModule })).rejects.toMatchObject({ diagnostic: { code: 'ITEM_CONTRACT_INVALID' } });
+});
+
+test('a rain forecast without provider summary prepares a visible error state', async t => {
+  const { service, Stack } = await rainContext(t, { request: async () => ({ ...rainPayload(), summary: '' }) });
+  const entry = (await prepareItems(item('rain'), service)).get('root/0')!;
+  expect(entry.state).toBe('error');
+  expect(texts(render(entry, Stack))).toEqual(['Rain forecast unavailable']);
 });

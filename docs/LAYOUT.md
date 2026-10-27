@@ -154,7 +154,7 @@ before content loading begins.
 | `future` | Next hour or tomorrow according to weather preferences; `normal` |
 | `forecast`, `daily` | Alias names for daily forecasts; `horizontal` or `vertical` |
 | `hourly` | Hourly forecast; `horizontal` or `vertical` |
-| `rain` | QWeather minutely outlook, update time and source link, or availability message; `normal` |
+| `rain` | QWeather minutely summary with a source link, or availability message; `normal` |
 | `sunrise`, `sunset` | The named sun event, including a visible unavailable state; `normal` |
 | `text("Hello")` | Custom text; the string maps to `text`, also written `text(text: "Hello")`; `normal` |
 | `symbol("cloud.fill")` | SF Symbol; the string maps to `name`, also written `symbol(name: "cloud.fill")`; `normal` |
@@ -252,7 +252,9 @@ or choosing another variant.
 
 Use `state: "empty"` or `"error"` with a visible presentation when data is
 missing. `effects.refreshAfterDate` requests a refresh; the renderer merges
-requests by earliest date. The background callback may set background styles
+requests by earliest date, including the widget refresh interval configured in
+Overall settings (15 minutes by default). The built-in rain item uses that shared
+schedule. The background callback may set background styles
 but must not add children. Old `custom.name(column)` callbacks and converter
 output without measurements do not satisfy this contract.
 

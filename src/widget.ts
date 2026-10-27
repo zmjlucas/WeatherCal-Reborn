@@ -49,6 +49,11 @@ export default {
       // Widget setup.
       this.widget = new ListWidget()
       this.widget.spacing = 0
+      const refreshInterval = Number(this.settings.widget.refreshInterval)
+      const refreshDate = new Date(this.now.getTime() + refreshInterval * 60000)
+      // iOS controls actual refresh timing; invalid or legacy values use 15 minutes.
+      this.widget.refreshAfterDate = Number.isInteger(refreshInterval) && refreshInterval > 0 && Number.isFinite(refreshDate.getTime())
+        ? refreshDate : new Date(this.now.getTime() + 15 * 60000)
 
       this.widget.setPadding(0, 0, 0, 0)
 

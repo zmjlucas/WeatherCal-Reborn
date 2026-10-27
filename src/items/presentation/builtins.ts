@@ -42,7 +42,7 @@ export async function prepareBuiltin(name: keyof typeof items, host: WeatherCalC
       if (name === 'events' && !context.data.events?.length) state = 'empty';
       if (name === 'reminders' && !context.data.reminders?.length) state = 'empty';
       if (name === 'rain') {
-        if (context.settings.weather.provider === 'openweather' || !context.data.rain?.forecast || !context.data.rain?.outlook) state = 'error';
+        if (context.settings.weather.provider === 'openweather' || !context.data.rain?.forecast?.summary || !context.data.rain?.outlook) state = 'error';
         else if (context.data.rain.outlook.state === 'clear') state = 'empty';
       }
       if (name === 'sunrise' || name === 'sunset') {

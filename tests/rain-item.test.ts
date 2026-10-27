@@ -12,52 +12,50 @@ async function renderContext(t: TestContext, options: EnvironmentOptions = {}) {
   return env;
 }
 
-test('rain item renders absolute onset and update times without depending on future weather settings', async t => {
+test('rain item renders the API summary without depending on future weather settings', async t => {
   const { service, Stack, requests } = await renderContext(t);
   service.settings.weather.showRain = false;
   service.settings.weather.tomorrowShownAtHour = '0';
   const column = new Stack();
   await service.rain(column);
-  assert.deepEqual(texts(column), ['Rain expected around 12:20', 'Updated 12:00 · QWeather']);
-  assert.equal(descendants(column).find(node => node.text.includes('QWeather'))?.url, 'https://www.qweather.com/');
-  assert.equal(service.widget.refreshAfterDate?.getTime(), rainNow + 5 * 60000);
-  service.widget.refreshAfterDate = new Date(rainNow + 60000);
-  await service.rain(new Stack());
-  assert.equal(service.widget.refreshAfterDate.getTime(), rainNow + 60000);
+  assert.deepEqual(texts(column), ['Rain in 20 minutes']);
+  assert.equal(descendants(column).find(node => node.type === 'text')?.url, 'https://www.qweather.com/');
+  const cachedColumn = new Stack();
+  await service.rain(cachedColumn);
+  assert.deepEqual(texts(cachedColumn), ['Rain in 20 minutes']);
   assert.equal(requests.length, 1);
 });
 
-for (const [amounts, expected] of [
-  [Array.from({ length: 24 }, (_, i) => i < 7 ? 0.2 : 0), 'Rain expected to stop around 12:35'],
-  [Array(24).fill(0.2), 'Rain expected through 14:00'],
-  [Array(24).fill(0), 'No precipitation expected through 14:00']
+for (const [amounts, summary] of [
+  [Array.from({ length: 24 }, (_, i) => i < 7 ? 0.2 : 0), 'Rain will stop in 35 minutes'],
+  [Array(24).fill(0.2), 'Rain for the next two hours'],
+  [Array(24).fill(0), 'No precipitation for the next two hours']
 ] as const) {
-  test(`rain item displays ${expected}`, async t => {
-    const { service, Stack } = await renderContext(t, { request: async () => rainPayload(amounts) });
+  test(`rain item displays the provider summary: ${summary}`, async t => {
+    const { service, Stack } = await renderContext(t, { request: async () => ({ ...rainPayload(amounts), summary }) });
     const column = new Stack();
     await service.rain(column);
-    assert.equal(texts(column)[0], expected);
+    assert.deepEqual(texts(column), [summary]);
   });
 }
 
-test('rain item uses Chinese weather language and never extends the cached forecast window', async t => {
+test('rain item displays the Chinese API summary only while the cached forecast is valid', async t => {
   let broken = false;
   const { service, Stack, requests } = await renderContext(t, { request: async () => {
     if (broken) throw Error('Offline');
-    const raw = rainPayload(Array(24).fill(0));
-    return raw;
+    return { ...rainPayload(Array(24).fill(0)), summary: '未来两小时无降水' };
   } });
   service.settings.weather.locale = 'zh_Hans_CN';
   let column = new Stack();
   await service.rain(column);
-  assert.deepEqual(texts(column), ['预计14:00前无降水', '更新于12:00 · 和风天气']);
+  assert.deepEqual(texts(column), ['未来两小时无降水']);
   assert.equal(new URL(requests[0]!).searchParams.get('lang'), 'zh');
   broken = true;
   service.now = new Date(rainNow + 10 * 60000);
   vi.setSystemTime(service.now);
   column = new Stack();
   await service.rain(column);
-  assert.deepEqual(texts(column), ['预计14:00前无降水', '更新于12:00 · 和风天气']);
+  assert.deepEqual(texts(column), ['未来两小时无降水']);
   service.now = new Date(rainNow + 16 * 60000);
   vi.setSystemTime(service.now);
   column = new Stack();
@@ -65,17 +63,15 @@ test('rain item uses Chinese weather language and never extends the cached forec
   assert.deepEqual(texts(column), ['短临降水预报暂不可用']);
 });
 
-test('rain item describes snow separately', async t => {
-  const { service, Stack } = await renderContext(t, { request: async () => {
-    const raw = rainPayload();
-    raw.minutely.forEach(point => { point.type = 'snow'; });
-    return raw;
-  } });
-  service.settings.weather.locale = 'zh';
-  const column = new Stack();
-  await service.rain(column);
-  assert.equal(texts(column)[0], '预计约12:20开始降雪');
-});
+for (const summary of [undefined, null, '', '   ', 42]) {
+  test(`rain item reports unavailable for summary ${JSON.stringify(summary)} while retaining parsed data`, async t => {
+    const { service, Stack } = await renderContext(t, { request: async () => ({ ...rainPayload(), summary }) });
+    const column = new Stack();
+    await service.rain(column);
+    assert.deepEqual(texts(column), ['Rain forecast unavailable']);
+    assert.deepEqual(service.data.rain?.outlook, { state: 'starts', time: rainNow + 20 * 60000, kind: 'rain' });
+  });
+}
 
 test('rain item reports unavailable and requires QWeather rather than inventing clear conditions', async t => {
   const { service, Stack, requests } = await renderContext(t, { request: async () => ({ code: '204' }) });
@@ -91,10 +87,13 @@ test('rain item reports unavailable and requires QWeather rather than inventing 
 
 test('rain is available through real layouts and layouts without it make no minutely requests', async t => {
   const { service, requests } = await renderContext(t);
+  service.writePreference(null, { widget: { refreshInterval: '25' } }, service.prefPath);
   const plain = await service.createWidget('text("Hello")', service.name, false, undefined, {family:'large',viewport:{width:320,height:340}});
   assert.deepEqual(texts(plain), ['Hello']);
+  assert.equal(plain.refreshAfterDate?.toISOString(), '2026-10-26T04:25:00.000Z');
   assert.equal(requests.length, 0);
   const widget = await service.createWidget('rain', service.name, false, undefined, {family:'large',viewport:{width:320,height:340}});
-  assert.deepEqual(texts(widget), ['Rain expected around 12:20', 'Updated 12:00 · QWeather']);
+  assert.deepEqual(texts(widget), ['Rain in 20 minutes']);
+  assert.equal(widget.refreshAfterDate?.toISOString(), '2026-10-26T04:25:00.000Z');
   assert.equal(requests.length, 1);
 });

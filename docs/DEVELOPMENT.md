@@ -72,6 +72,20 @@ QWeather when no provider is stored: choose OpenWeather in Weather preferences
 to keep using an existing saved key, or configure QWeather through Other settings. Leave the shared legacy engine available while other old
 scripts still use it.
 
+## Widget refresh interval
+
+In Edit preferences, open **Overall settings → Widget refresh interval** to
+set the earliest next refresh in minutes. The default is **15 minutes** for
+every layout, including layouts with `rain`. Enter a positive whole number;
+missing, blank or invalid values fall back to 15 minutes. Existing saved
+preferences receive this default automatically.
+
+The setting is stored as `widget.refreshInterval` and is read before planning
+the layout. It sets Scriptable's `refreshAfterDate`;
+[iOS decides the actual refresh time](https://docs.scriptable.app/listwidget/#refreshafterdate)
+and may run the script later. Weather, rain and location retain their separate
+cache ages: a widget refresh only fetches data whose cache needs updating.
+
 ## Custom items and backgrounds
 
 `createWidget(layout, name, iCloudInUse, custom?, options?)` accepts the recursive
@@ -272,25 +286,27 @@ API Host/Key as regular weather; OpenWeather shows a requires-QWeather message.
 
 The item requests [`/v7/minutely/5m`](https://dev.qweather.com/docs/api/minutely/minutely-precipitation/),
 which covers China with five-minute precipitation amounts for the next two
-hours. It shows approximate absolute times, such as `Rain expected around 14:35`
-or `Rain expected to stop around 15:10`, plus the provider's update time and a
-QWeather source link. Fully dry/wet sequences show the actual end of the
-available forecast window. Snow is labeled separately; mixed rain/snow is
-described as precipitation. Timing is derived from positive five-minute bins,
-not from hourly probabilities or a promise of exact rain timing.
+hours. The item currently displays the API's `summary` text directly, with a
+QWeather link on that text, replacing the generated prediction and update-time
+line. `src/data/rain-response.ts` still parses the five-minute amounts, snow/rain
+types and update time, and computes `RainOutlook` for later custom summaries.
+Those calculations also continue to check whether the forecast covers now.
 
 Chinese weather language (or Chinese device/widget locale when unset) produces
-Chinese messages; other languages use English, following the endpoint's
+Chinese API summaries; other languages use English, following the endpoint's
 [Chinese/English language coverage](https://dev.qweather.com/docs/resource/language/).
-There is no static minute countdown to become misleading between iOS refreshes.
+Relative times in a summary refer to the provider's update time; the text is
+shown unchanged between refreshes.
 
 Minutely data has a separate cache, refreshed after five minutes when the script
 runs. Cached data is usable only while both its file age and provider update age
-are at most 15 minutes and its time series covers the current time. A cached dry
-forecast never becomes a new two-hour forecast. Missing/invalid/gapped data,
+are at most 15 minutes and its time series covers the current time. The summary
+is cached with the parsed forecast; older caches without that field trigger a
+refresh. Missing/blank summaries, missing/invalid/gapped data,
 unsupported coverage, denied access and expired offline data show unavailable.
-The widget requests another refresh after five minutes without postponing an
-earlier requested refresh; [iOS controls the actual refresh time](https://docs.scriptable.app/listwidget/#refreshafterdate).
+The widget's next refresh follows **Overall settings → Widget refresh interval**
+(15 minutes by default). The rain item uses that shared schedule;
+[iOS controls the actual refresh time](https://docs.scriptable.app/listwidget/#refreshafterdate).
 
 Current/hourly/daily weather and minutely requests share host sequencing,
 one-second pacing and 429 cooldown, including legacy body-level 429 errors.

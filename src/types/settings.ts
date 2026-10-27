@@ -15,6 +15,7 @@ export interface WidgetSettings {
   mediumViewport: string;
   largeViewport: string;
   tintIcons: string;
+  refreshInterval: NumericSetting;
   updateLocation: NumericSetting;
   instantDark: boolean;
 }
@@ -155,6 +156,7 @@ export function settingsValues(schema: EditingSettings): ParsedSettings {
       mediumViewport: schema.widget.mediumViewport.val,
       largeViewport: schema.widget.largeViewport.val,
       tintIcons: schema.widget.tintIcons.val,
+      refreshInterval: schema.widget.refreshInterval.val,
       updateLocation: schema.widget.updateLocation.val,
       instantDark: schema.widget.instantDark.val,
     },
