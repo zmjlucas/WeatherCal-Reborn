@@ -9,7 +9,7 @@ const url = 'https://github.com/zmjlucas/WeatherCal-Reborn/releases/download/v0.
 const release = { tag_name: 'v0.2.0', assets: [{ name: 'WeatherCal-Reborn-v0.2.0.js', browser_download_url: url }] };
 const downloaded = '// WeatherCal: user begin\nconst layout = "date";\n// WeatherCal: engine end\n';
 const target = '/documents/WeatherCal-Reborn.js';
-const installer = '/documents/Setup.js';
+const installer = '/documents/WeatherCal-Reborn-Setup.js';
 
 for (const iCloud of [false, true]) {
   test(`installer saves latest release and removes itself using ${iCloud ? 'iCloud' : 'local'} storage`, async () => {
@@ -21,7 +21,7 @@ for (const iCloud of [false, true]) {
     const files = iCloud ? env.cloud : env.local;
     files.writeString(installer, 'setup');
     const opened: string[] = [];
-    const source = await readFile(new URL('../setup.js', import.meta.url), 'utf8');
+    const source = await readFile(new URL('../WeatherCal-Reborn-Setup.js', import.meta.url), 'utf8');
     await runInNewContext(`(async () => { ${source}\n })()`, {
       ...env.globals, module: { filename: installer },
       Safari: { open: (address: string) => {
@@ -50,7 +50,7 @@ for (const failure of ['existing', 'same name', 'metadata', 'download', 'invalid
     if (failure === 'write') env.local.writeString = () => { throw Error('Disk full'); };
     if (failure === 'delete') env.local.remove = () => { throw Error('Cannot delete'); };
     const opened: string[] = [];
-    const source = await readFile(new URL('../setup.js', import.meta.url), 'utf8');
+    const source = await readFile(new URL('../WeatherCal-Reborn-Setup.js', import.meta.url), 'utf8');
     await runInNewContext(`(async () => { ${source}\n })()`, {
       ...env.globals, module: { filename: self },
       Safari: { open: (address: string) => {
