@@ -6,6 +6,7 @@ export default defineConfig({
   title: 'WeatherCal Layout',
   description: 'Create layouts for your WeatherCal widget.',
   base: '/WeatherCal-Reborn/',
+  srcExclude: ['**/AGENTS.md', '**/agents.md'],
   lang: 'en-US',
   cleanUrls: false,
   locales: {

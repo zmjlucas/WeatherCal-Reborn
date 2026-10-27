@@ -67,7 +67,12 @@ It cannot determine approved word meanings or parts of speech.
 
 Canonical snippets are in `website/examples/`.
 Both languages import these files with VitePress regions.
-The tests in `tests/docs-examples.test.ts` verify their parser and planner behavior.
+Use `var layout` and `var custom`, as specified in `website/AGENTS.md`.
+Start each example with a short comment.
+Put the layout text on separate lines between the backticks.
+Use `WeatherCal-Reborn.js` as the installed script name.
+The tests in `tests/docs-examples.test.ts` execute each published region as a script.
+They then verify its parser, planner, and custom-item behavior.
 Update those tests when an example's intended behavior changes.
 
 The diagrams show possible structures. They are not screenshots of Scriptable.
