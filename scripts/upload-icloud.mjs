@@ -12,12 +12,13 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const exec = promisify(execFile);
 
 /** Keep the same validation and user-region preservation as the in-app updater. */
-export function prepareUpload(installed, fresh) {
+export function prepareUpload(installed, fresh, buildInfo) {
+  const annotated = `// Commit: ${buildInfo.commit}\n// Build time: ${buildInfo.time}\n${fresh}`;
   if (installed === null) {
-    splitScript(fresh);
-    return fresh;
+    splitScript(annotated);
+    return annotated;
   }
-  return mergeScriptUpdate(installed, fresh);
+  return mergeScriptUpdate(installed, annotated);
 }
 
 /** The helper uses Foundation file coordination, not an uncoordinated copy. */
@@ -55,8 +56,11 @@ export async function upload(args = process.argv.slice(2)) {
     console.log(`${success} iCloud write access verified; script unchanged.`);
     return;
   }
+  const { stdout: commit } = await exec('git', ['rev-parse', '--short', 'HEAD'], { cwd: root });
+  const buildInfo = { commit: commit.trim(), time: new Date().toISOString() };
   const artifacts = await build();
-  const replacement = prepareUpload(current.source, artifacts['one.js']);
+  const replacement = prepareUpload(current.source, artifacts['one.js'], buildInfo);
+  console.log(replacement.split('\n').slice(0, 2).join('\n'));
   if (args[0] === '--check') {
     console.log(`${success} Validated target: ${target} (no upload)`);
     return;

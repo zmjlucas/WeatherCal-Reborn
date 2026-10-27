@@ -9,14 +9,16 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { prepareUpload, runNative } from '../scripts/upload-icloud.mjs';
 import { buildArtifacts } from '../scripts/build.mjs';
+import { splitScript } from '#source/setup/script-format';
 import { scriptFixture } from './helpers/script-format';
 import { createEnvironment, required, texts } from './helpers/scriptable';
 
 const installed = scriptFixture('const layout = `row\ncolumn\ntext(My layout)`; const custom = {};', 'const oldEngine = 1;', '// Variables used by Scriptable.\n// icon-color: red; icon-glyph: cloud;\n');
 const fresh = scriptFixture('const layout = `reset`; const custom = {};', 'const newEngine = 2;');
+const buildInfo = { commit: 'a1b2c3d', time: '2026-10-27T04:05:06.789Z' };
 
 test('upload preparation retains installed customizations while replacing the engine', () => {
-  const result = prepareUpload(installed, fresh);
+  const result = prepareUpload(installed, fresh, buildInfo);
   assert(result.includes('text(My layout)'));
   assert(result.includes('icon-color: red; icon-glyph: cloud;'));
   assert(result.includes('const newEngine = 2;'));
@@ -26,10 +28,23 @@ test('upload preparation retains installed customizations while replacing the en
 
 test('upload preparation refuses invalid installed source, downloads and incompatible bindings', () => {
   for (const invalid of ['<html>error</html>', '// Variables used by Scriptable.\nconst code = importModule("legacy");']) {
-    assert.throws(() => prepareUpload(invalid, fresh));
-    assert.throws(() => prepareUpload(installed, invalid));
+    assert.throws(() => prepareUpload(invalid, fresh, buildInfo));
+    assert.throws(() => prepareUpload(installed, invalid, buildInfo));
   }
-  assert.throws(() => prepareUpload(installed, scriptFixture(undefined, 'const layout = 42;')));
+  assert.throws(() => prepareUpload(installed, scriptFixture(undefined, 'const layout = 42;'), buildInfo));
+});
+
+test('repeated uploads replace build information and preserve installed customizations', () => {
+  const first = prepareUpload(installed, fresh, buildInfo);
+  const next = prepareUpload(first, fresh, { commit: 'b2c3d4e', time: '2026-10-27T05:06:07.890Z' });
+  assert.deepEqual(next.split('\n').slice(0, 2), [
+    '// Commit: b2c3d4e', '// Build time: 2026-10-27T05:06:07.890Z',
+  ]);
+  assert.equal(next.match(/^\/\/ Commit:/gm)?.length, 1);
+  assert.equal(next.match(/^\/\/ Build time:/gm)?.length, 1);
+  assert.equal(splitScript(next).user, splitScript(installed).user);
+  assert.equal(splitScript(next).engine, splitScript(fresh).engine);
+  assert(next.includes('icon-color: red; icon-glyph: cloud;'));
 });
 
 async function fixture(t: TestContext) {
@@ -41,7 +56,7 @@ async function fixture(t: TestContext) {
   const backup = path.join(directory, 'backup');
   await fs.writeFile(target, installed, { mode: 0o600 });
   await fs.writeFile(expected, installed);
-  await fs.writeFile(candidate, prepareUpload(installed, fresh));
+  await fs.writeFile(candidate, prepareUpload(installed, fresh, buildInfo));
   return { directory, target, expected, candidate, backup };
 }
 
@@ -55,7 +70,7 @@ macTest('native update preserves the existing file identity, backups and neighbo
   assert.equal(result.status, 'updated');
   assert.equal(await fs.readFile(f.backup, 'utf8'), installed);
   assert.equal((await fs.stat(f.backup)).mode & 0o777, 0o600);
-  assert.equal(await fs.readFile(f.target, 'utf8'), prepareUpload(installed, fresh));
+  assert.equal(await fs.readFile(f.target, 'utf8'), prepareUpload(installed, fresh, buildInfo));
   assert.equal((await fs.stat(f.target)).ino, before.ino);
   assert.equal((await fs.stat(f.target)).mode, before.mode);
   assert.equal(await fs.readFile(neighbor, 'utf8'), 'saved preferences');
@@ -98,7 +113,7 @@ macTest('native inspect and probe leave the installed script and directory conte
 test('merged widget retains its identity, preferences, image backgrounds and credentials', async () => {
   const artifacts = await buildArtifacts();
   const current = scriptFixture('const layout = `column(padding: [10,15,10,15])[identity]`; const custom = { items: { identity: { async prepare() { return { state: "ready", effects: {}, variants: [{ id: "normal", minWidth: 100, preferredWidth: 150, adaptationCost: 0, measure() { return { requiredHeight: 20, preferredHeight: 20, confidence: "estimated" }; } }], render(stack) { stack.addText(Script.name()); } }; } } } };');
-  const merged = prepareUpload(current, artifacts['one.js']);
+  const merged = prepareUpload(current, artifacts['one.js'], buildInfo);
   for (const dark of [false, true]) {
     const env = createEnvironment({ iCloud: true, name: 'WeatherCal-Test', dark });
     env.cloud.writeString('/library/weather-cal-preferences-WeatherCal-Test', '{"widget":{"padding":0,"instantDark":false,"largeViewport":"320 x 340"}}');
@@ -145,8 +160,10 @@ macTest('native writer restores the original bytes when an actual write exceeds 
 });
 
 test('first upload uses the complete validated fresh bundle', () => {
-  assert.equal(prepareUpload(null, fresh), fresh);
-  assert.throws(() => prepareUpload(null, '<html>build failed</html>'));
+  const result = prepareUpload(null, fresh, buildInfo);
+  assert.equal(result, '// Commit: a1b2c3d\n// Build time: 2026-10-27T04:05:06.789Z\n' + fresh);
+  assert.deepEqual(splitScript(result).engine, splitScript(fresh).engine);
+  assert.throws(() => prepareUpload(null, '<html>build failed</html>', buildInfo));
 });
 
 macTest('missing script inspection allows creation without changing neighboring data', async t => {
