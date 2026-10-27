@@ -198,3 +198,24 @@ test('a rain forecast without provider summary prepares a visible error state', 
   expect(entry.state).toBe('error');
   expect(texts(render(entry, Stack))).toEqual(['Rain forecast unavailable']);
 });
+
+
+test('font adaptation measures and renders the same bounded font while preserving snapshot text and font face', async t => {
+  const { Stack } = installScriptable(t);
+  const host = await fixture();
+  host.format.customText!.size = '14'; host.format.customText!.font = 'Menlo';
+  const prepared = (await prepareItems(item('text', 'root/0', '保持完整文字 Long weather forecast'), host)).get('root/0')!;
+  expect(prepared.atFontScale).toBeTypeOf('function');
+  const adapted = prepared.atFontScale!(0.7);
+  const original = render(prepared, Stack, undefined, 100);
+  const scaled = render(adapted, Stack, undefined, 100);
+  expect(texts(scaled)).toEqual(texts(original));
+  const text = descendants(scaled).find(n => n.type === 'text')!;
+  expect(text.font.size).toBe(10); expect(text.font.name).toBe('Menlo');
+  expect(adapted.variants[0]!.measure(100).requiredHeight).toBeLessThan(prepared.variants[0]!.measure(100).requiredHeight);
+  expect(host.format.customText!.size).toBe('14');
+  expect(descendants(render(prepared, Stack)).find(n => n.type === 'text')!.font.size).toBe(14);
+  host.format.customText!.size = '8';
+  const tiny = (await prepareItems(item('text', 'root/1', 'Already small'), host)).get('root/1')!;
+  expect(descendants(render(tiny.atFontScale!(0.7), Stack)).find(n => n.type === 'text')!.font.size).toBe(8);
+});

@@ -13,6 +13,7 @@ export class PresentationNode {
   flexible = false;
   font?: Font;
   fontSize = 14;
+  fontFactory?: (size: number) => Font;
   textColor?: Color;
   tintColor?: Color;
   textOpacity?: number;
@@ -57,14 +58,19 @@ export function recordingContext(host: WeatherCalContext): { context: WeatherCal
   context.align = stack => {
     const child = stack.addStack(); child.layoutVertically(); return child;
   };
-  const fonts = new Map<Font, number>();
+  const fonts = new Map<Font, {size: number; create(size: number): Font}>();
+  const provideFont = host.provideFont.bind(host);
   context.provideFont = (name, size) => {
-    const font = host.provideFont(name, size);
-    fonts.set(font, size); return font;
+    const font = provideFont(name, size);
+    fonts.set(font, {size, create: value => provideFont(name, value)}); return font;
   };
   return { context, root, finish() {
     function capture(node: PresentationNode): void {
-      if (node.font) node.fontSize = fonts.get(node.font) ?? 14;
+      if (node.font) {
+        const recorded = fonts.get(node.font);
+        node.fontSize = recorded?.size ?? 14;
+        if (recorded) node.fontFactory = recorded.create;
+      }
       // Recorded content keeps configured line limits but never silently reduces its font.
       if (node.kind === 'text') node.minimumScaleFactor = 1;
       for (const child of node.children) capture(child);

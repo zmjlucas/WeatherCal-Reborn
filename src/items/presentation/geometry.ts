@@ -107,7 +107,8 @@ export function renderPresentation(root: PresentationNode, container: WidgetStac
     if (node.url) target.url = node.url;
     if (node.kind === 'text') {
       const text = target.addText(node.text);
-      if (node.font) text.font = node.font;
+      if (node.fontFactory) text.font = node.fontFactory(node.fontSize);
+      else if (node.font) text.font = node.font;
       if (node.textColor) text.textColor = node.textColor;
       if (node.textOpacity !== undefined) text.textOpacity = node.textOpacity;
       if (node.lineLimit !== undefined) text.lineLimit = node.lineLimit;

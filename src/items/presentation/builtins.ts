@@ -3,6 +3,7 @@ import type { WeatherCalContext } from '../../types/context';
 import type { PreparedItem, Value } from '../../layout/types';
 import { intrinsic, measurePresentation, renderPresentation } from './geometry';
 import { recordingContext } from './recording';
+import { scalePresentation } from './typography';
 import type { PresentationNode } from './recording';
 
 export const builtinNames = Object.keys(items) as Array<keyof typeof items>;
@@ -11,7 +12,6 @@ export async function prepareBuiltin(name: keyof typeof items, host: WeatherCalC
   const orientations = name === 'current' ? ['inline', 'stacked']
     : ['forecast', 'daily', 'hourly'].includes(name) ? ['horizontal', 'vertical'] : ['normal'];
   const trees = new Map<string, PresentationNode>();
-  const variants: PreparedItem['variants'][number][] = [];
   const effects: PreparedItem['effects'] = {};
   let state: PreparedItem['state'] = 'ready';
   for (const [index, orientation] of orientations.entries()) {
@@ -87,18 +87,32 @@ export async function prepareBuiltin(name: keyof typeof items, host: WeatherCalC
     if (root.refreshAfterDate && (!effects.refreshAfterDate || root.refreshAfterDate < effects.refreshAfterDate)) effects.refreshAfterDate = new Date(root.refreshAfterDate.getTime());
     recording.finish();
     trees.set(orientation, root);
-    const size = intrinsic(root);
-    variants.push(Object.freeze({
-      id: orientation, minWidth: size.min, preferredWidth: Math.max(size.min, Math.min(360, size.preferred)), adaptationCost: index,
-      measure(width: number) {
-        const requiredHeight = measurePresentation(root, width);
-        return { requiredHeight, preferredHeight: requiredHeight, confidence: 'estimated' as const };
-      },
-    }));
   }
-  return Object.freeze({ state, variants: Object.freeze(variants), effects: Object.freeze(effects), render(container, placement) {
-    const tree = trees.get(placement.variant);
-    if (!tree) throw new Error(`Unknown prepared variant: ${placement.variant}`);
-    renderPresentation(tree, container, placement);
-  } } satisfies PreparedItem);
+  const snapshots = new Map<number, PreparedItem>();
+  function atFontScale(scale: number): PreparedItem {
+    if (!Number.isFinite(scale) || scale < 0.7 || scale > 1) throw new Error('Font scale must be between 0.7 and 1.');
+    const cached = snapshots.get(scale);
+    if (cached) return cached;
+    const selected = scale === 1 ? trees : new Map([...trees].map(([id, root]) => [id, scalePresentation(root, scale)]));
+    const variants = [...selected].map(([id, root], index) => {
+      const size = intrinsic(root);
+      return Object.freeze({
+        id, minWidth: size.min, preferredWidth: Math.max(size.min, Math.min(360, size.preferred)), adaptationCost: index,
+        measure(width: number) {
+          const requiredHeight = measurePresentation(root, width);
+          return { requiredHeight, preferredHeight: requiredHeight, confidence: 'estimated' as const };
+        },
+      });
+    });
+    const prepared: PreparedItem = Object.freeze({ state, variants: Object.freeze(variants), effects: Object.freeze(effects), atFontScale,
+      render(container, placement) {
+        const tree = selected.get(placement.variant);
+        if (!tree) throw new Error(`Unknown prepared variant: ${placement.variant}`);
+        renderPresentation(tree, container, placement);
+      },
+    } satisfies PreparedItem);
+    snapshots.set(scale, prepared);
+    return prepared;
+  }
+  return atFontScale(1);
 }
