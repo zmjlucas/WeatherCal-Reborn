@@ -20,9 +20,26 @@ Scriptable不提供实际小组件边界或大图标设置的读取接口。
 显示缩放、大图标和操作系统变化可能使手动覆盖成为必要。
 未知屏幕尺寸会产生`VIEWPORT_UNKNOWN`。
 
+## 获取可用尺寸 {#obtain-usable-dimensions}
+
+使用与设备、操作系统版本、小组件尺寸类别、显示缩放和图标大小一致的测量记录。
+记录必须提供原生内边距为零时的完整小组件宽度和高度，单位为逻辑点。
+仓库文件`src/layout/device-profiles.ts`包含参考估计值及其来源。
+这些估计值并不是每一种设备配置的实测结果。
+
+如果没有匹配的测量记录，请[提交屏幕配置请求](https://github.com/zmjlucas/WeatherCal-Reborn/issues/new)。
+附上诊断消息和上述配置条件。
+请求提供该配置下经过验证的小组件尺寸。
+取得合适尺寸前，请将覆盖项留空。
+在此期间，未知屏幕配置仍会显示`VIEWPORT_UNKNOWN`。
+
+不要用相似手机的尺寸或全屏尺寸代替小组件尺寸。
+[Scriptable屏幕API](https://docs.scriptable.app/device/#screensize)提供的是屏幕尺寸，不是小组件边界。
+
 ## 设置手动覆盖值 {#set-a-manual-override}
 
 如果自动识别尺寸与设备实测尺寸不一致，请使用手动覆盖值。
+首先[获取可用尺寸](#obtain-usable-dimensions)。
 
 1. 打开**Widget Setup**。
 2. 选择**Edit preferences**。

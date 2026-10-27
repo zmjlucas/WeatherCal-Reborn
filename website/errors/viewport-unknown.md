@@ -15,7 +15,7 @@ The engine does not guess dimensions for unknown screens.
 
 ## Supply a measured override {#supply-a-measured-override}
 
-1. Measure the full ListWidget width and height with native padding set to zero.
+1. [Obtain usable widget dimensions](../guide/viewport.md#obtain-usable-dimensions) for your device configuration.
 2. Record both dimensions in logical points.
 3. Open **Widget Setup**.
 4. Select **Edit preferences**.

@@ -15,7 +15,7 @@
 
 ## 提供实测覆盖值 {#supply-a-measured-override}
 
-1. 将原生内边距设为零，测量完整的ListWidget宽度和高度。
+1. 为当前设备配置[获取可用的小组件尺寸](../guide/viewport.md#obtain-usable-dimensions)。
 2. 用逻辑点记录两个尺寸。
 3. 打开**Widget Setup**。
 4. 选择**Edit preferences**。

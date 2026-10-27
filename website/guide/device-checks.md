@@ -19,7 +19,7 @@ Record these values for each device test:
 
 ## Do the geometry checks {#do-the-geometry-checks}
 
-1. Measure the full usable ListWidget area with native padding set to zero.
+1. [Obtain usable widget dimensions](./viewport.md#obtain-usable-dimensions) for the test configuration.
 2. Record its width and height in logical points.
 3. Compare the app preview with the home-screen widget.
 4. Examine fixed frames with visible backgrounds or borders.

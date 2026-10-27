@@ -20,9 +20,26 @@ Scriptable does not supply the actual widget bounds or the large-icon setting.
 Display zoom, large icons, and OS changes can make a manual override necessary.
 Unknown screen dimensions produce `VIEWPORT_UNKNOWN`.
 
+## Obtain usable dimensions {#obtain-usable-dimensions}
+
+Use a measurement record for the same device, OS version, widget family, display zoom, and icon size.
+The record must give the full widget width and height in logical points, with zero native padding.
+The repository file `src/layout/device-profiles.ts` contains reference estimates and their sources.
+These estimates are not measurements of every device configuration.
+
+If no matching measurement record exists, [open a profile request](https://github.com/zmjlucas/WeatherCal-Reborn/issues/new).
+Include the diagnostic message and the conditions listed above.
+Ask for verified widget dimensions for that configuration.
+Keep the override blank until suitable dimensions are available.
+An unknown profile will continue to show `VIEWPORT_UNKNOWN` during this time.
+
+Do not use a similar phone's dimensions or the full screen dimensions as a substitute.
+The [Scriptable screen API](https://docs.scriptable.app/device/#screensize) gives screen dimensions, not widget bounds.
+
 ## Set a manual override {#set-a-manual-override}
 
 Use an override when the detected dimensions do not match your device measurements.
+First, [obtain usable dimensions](#obtain-usable-dimensions).
 
 1. Open **Widget Setup**.
 2. Select **Edit preferences**.

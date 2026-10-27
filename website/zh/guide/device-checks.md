@@ -19,7 +19,7 @@
 
 ## 检查几何尺寸 {#do-the-geometry-checks}
 
-1. 将原生内边距设为零，测量完整的ListWidget可用区域。
+1. 为测试配置[获取可用的小组件尺寸](./viewport.md#obtain-usable-dimensions)。
 2. 用逻辑点记录宽度和高度。
 3. 比较应用内预览与主屏幕小组件。
 4. 用可见背景或边框检查固定区域。
