@@ -29,10 +29,16 @@ consecutive build identity, and the 500-line source module limit.
 3. Rename the installed script before setup if desired. Each script name owns
    separate preferences and backgrounds.
 4. Run it to choose a background, grant desired permissions, and optionally
-   choose QWeather (default) or OpenWeather and configure its credentials. Select that script in a Scriptable home-screen widget.
+   choose QWeather (default) or OpenWeather and configure its credentials.
+   Configure the selected family's viewport in Overall settings before previewing
+   content; blank dimensions produce a `VIEWPORT_UNKNOWN` diagnostic. See
+   [viewport setup and calibration](LAYOUT.md#configure-the-viewport-first).
+   Select that script in a Scriptable home-screen widget.
 5. Edit `layout` and `custom` between the `WeatherCal: user begin` and
    `WeatherCal: user end` comments. Keep all four boundary comments intact.
-   The generated engine occupies its own marked region.
+   The generated engine occupies its own marked region. Layout strings use the
+   [recursive layout syntax](LAYOUT.md); custom items provide size estimates under
+   `custom.items`.
 
 Install `dist/weather-cal-converter.js` separately if you need conversion.
 Both scripts start with Scriptable metadata. `dist/` is generated and ignored.
@@ -41,7 +47,10 @@ The Update code menu queries GitHub's latest stable release metadata and downloa
 the matching `WeatherCal-Reborn-v<version>.js` asset, validates its boundaries and JavaScript syntax, preserves the installed
 metadata and user region exactly, and replaces only the engine region. Failed
 downloads or validation leave the existing script untouched. Preferences,
-background images and the script name are preserved. Release download URLs
+background images and the script name are preserved. A preserved user region
+can still contain obsolete layout syntax or custom callbacks; updates do not
+convert them. Rewrite these using [the current layout contract](LAYOUT.md)
+when moving to this breaking engine version. Release download URLs
 will work only once a maintainer publishes the new assets; until then use local
 builds. Reset requires explicit confirmation and restores the downloaded
 script's default user region, then removes only this widget's data. Pre-releases
@@ -53,41 +62,59 @@ the installed script name and editable user region.
 
 There is no automatic replacement of legacy installations. Save a backup of
 your current script and its custom code first. Manually install `one.js` under
-the **same Scriptable name** and storage location, and copy your original layout
-and custom object into the new editable region. Existing preference/background
-filenames and OpenWeather key files remain compatible. Weather now defaults to
+the **same Scriptable name** and storage location. Rewrite the old line-based or
+ASCII layout as one `row`/`column`/`auto`/`flow` tree, and adapt custom item
+functions to `custom.items` modules with measurements. Copy the adapted code
+into the new editable region and configure the target family viewport.
+Existing preference/background filenames and OpenWeather key files remain
+compatible. Weather now defaults to
 QWeather when no provider is stored: choose OpenWeather in Weather preferences
 to keep using an existing saved key, or configure QWeather through Other settings. Leave the shared legacy engine available while other old
 scripts still use it.
 
 ## Custom items and backgrounds
 
-Existing custom methods and helpers remain supported. The engine keeps the original `this`-based internal context and public names, including `runSetup(name, iCloudInUse, codeFilename, gitHubUrl)` and `createWidget(layout, name, iCloudInUse, custom)`. `layout` can be a text DSL/ASCII string or a complete legacy settings object with a `layout` field.
+`createWidget(layout, name, iCloudInUse, custom?, options?)` accepts the recursive
+layout string. Preferences are loaded separately; settings objects and ASCII
+layouts are no longer accepted. Optional `options.family` selects `small`,
+`medium` or `large` for a programmatic preview, and `options.viewport` supplies
+`{ width, height }` in logical points. The installed entry passes its selected
+preview family before planning.
 
-```js
-const custom = {
-  greeting(column) {
-    code.provideText('Hello from my widget', column, code.format.greeting, true)
-  },
-  background(widget) {
-    widget.backgroundColor = Color.black()
-  }
-}
-```
+Register each custom item as an `ItemModule` under `custom.items`. Its `prepare`
+method captures data and resources once, returns width-dependent size estimates,
+and provides a synchronous renderer for the selected variant. A complete module
+may override a built-in. The [layout guide](LAYOUT.md#custom-itemmodule) includes
+an example and the empty/error-state contract. Shared mutable alignment,
+opaque item callbacks and callbacks triggered by empty event/reminder lists are
+removed.
 
-Custom methods override built-ins. The entry already passes `custom` to `createWidget`. Export saves the full installed script source, preserving these custom methods, plus preferences/backgrounds and embedded image appearances. `createWeatherCal()` is available for independent contexts when another script manages several widgets.
+`custom.background(widget)` can set background styles but must not add layout
+children. The entry passes the custom object to `createWidget`. Export preserves
+the full installed source, preferences/backgrounds and embedded image
+appearances. `createWeatherCal()` still creates independent contexts when
+another script manages several widgets; formatting and data helpers remain
+available through the module's preparation context.
 
-The optional `dist/weather-cal-converter.js` converts a conventional single-ListWidget script into a custom method. It preserves fixed widget parameters, moves content into a stack and removes root presentation/completion calls. Review the generated method before installing it: source with multiple widgets, indirect constructors, template-expression logic or its own setup may require manual adaptation. The converter is a source-editing assistant, not a general JavaScript transpiler.
+The optional `dist/weather-cal-converter.js` rewrites a conventional
+single-ListWidget script into a rendering method. It preserves fixed widget
+parameters, moves content into a stack and removes root presentation/completion
+calls. Its output still requires a measured `ItemModule` wrapper and separation
+of data loading from rendering before use with this layout engine. Source with
+multiple widgets, indirect constructors, template-expression logic or its own
+setup may require further manual adaptation. The converter does not infer
+content sizes or create a complete module contract.
 
 ## Modules and tests
 
-- `src/widget.ts`, `src/layout/`: widget lifecycle, backgrounds and both layout syntaxes.
+- `src/widget.ts`, `src/layout/`: widget lifecycle, viewport resolution, parsing, bounded planning and native rendering.
 - `src/core/`: formatting, symbols/drawing, gradients, prompts and storage.
 - `src/preferences/`: independent schema categories, persistence and editor UI.
 - `src/data/`: calendar/reminder filters, location and weather/sun transports.
-- `src/items/`: rendering, independent of request/persistence implementations.
+- `src/items/registry.ts`, `src/items/presentation/`: validated modules, prepared presentation trees, estimated geometry and synchronous rendering.
+- `src/items/`: built-in content formatting, independent of request/persistence implementations.
 - `src/setup/`: onboarding, menus, background selection and distribution.
-- `src/create.ts`, `src/index.ts`: compatibility composition and optional context factory.
+- `src/create.ts`, `src/index.ts`: context composition and factory.
 - `src/entry.ts`, `src/user.ts`: widget completion flow and editable layout/custom defaults.
 - `src/scriptable/`: independent converter interface.
 - `scripts/`: deterministic build and source checks.
@@ -109,13 +136,23 @@ part of testing, even when credentials have been supplied separately.
 
 After installing the widget and optional converter, verify these device-dependent paths before publishing:
 
-- Small, medium and large previews; home-screen widget with both text and ASCII layouts.
+- Establish zero-padding viewport dimensions for each supported family, device,
+  OS and display-zoom setting; save them as `width x height` preferences.
+- Small, medium and large previews plus home-screen rendering with manual,
+  auto, flow and nested layouts. Check multiple automatic regions, long text,
+  unavailable data, fixed dimensions and a deliberately overfull layout.
 - Light/dark solid and gradient backgrounds; both image appearances; custom background.
 - Calendar/reminder permissions, selected lists, all-day/ongoing events, overdue reminders.
 - OpenWeather key/subscription, correct units/locality, forecast and sunrise times; cached offline rendering.
-- Custom item overrides, text/SF Symbols, battery/charging, greetings and week.
+- Prepared custom item overrides, text/SF Symbols, battery/charging, greetings
+  and week. Confirm small-widget tap behavior and medium/large item links.
 - Edit every preference type; duplicate and rename scripts; export/import custom source and images.
 - iCloud hydration; update preserves script; reset preserves other widgets.
+
+The native layout measurements are estimates until these checks are recorded.
+The engine ships no calibrated device-size table. Follow the detailed
+[calibration procedure](LAYOUT.md#device-calibration) and retain the device,
+family and configuration with the results.
 
 ## Commits
 
@@ -220,18 +257,16 @@ account's limits when configuring a deployment.
 
 ### Near-term rain item
 
-Add `rain` to the editable `layout` in your installed script, preferably in a
-wide column or its own row, for example:
+Add `rain` to the editable `layout` in your installed script. Let `auto` arrange
+it with weather, or place it above an automatic weather group:
 
-```text
-row
-  column
-    rain
+```js
+const layout = `column(padding: 12)[rain, auto[current, future]]`
 ```
 
-Keep your other layout items. Existing layouts and the default layout are not
-rewritten; without `rain`, the widget makes no minutely requests. The item is
-independent of **Show percent chance of rain** and the switch to Tomorrow.
+Keep any other desired items in the new tree. Without `rain`, the widget makes
+no minutely requests. The item is independent of **Show percent chance of rain**
+and the switch to Tomorrow.
 It requires QWeather selected in Weather preferences and the same configured
 API Host/Key as regular weather; OpenWeather shows a requires-QWeather message.
 
