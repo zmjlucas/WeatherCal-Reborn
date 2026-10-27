@@ -4,7 +4,7 @@ export default {
   async initialSetup(this: WeatherCalContext, imported = false): Promise<string | undefined> {
       let message, options
       if (!imported) {
-        message = "Welcome to Weather Cal. Make sure your script has the name you want before you begin."
+        message = "Welcome to WeatherCal-Reborn. For quick start instructions, see the README:\nhttps://github.com/zmjlucas/WeatherCal-Reborn#quick-start\n\nMake sure your script has the name you want before you begin."
         options = ['I like the name "' + this.name + '"', "Let me go change it"]
         if (await this.generateAlert(message,options)) return
       }
