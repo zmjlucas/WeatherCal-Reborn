@@ -24,7 +24,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "validate:bundle": "node scripts/validate-bundle.mjs",
-    "check": "pnpm typecheck && pnpm test && pnpm build && pnpm validate:bundle"
+    "check": "pnpm typecheck && pnpm test && pnpm build && pnpm validate:bundle",
+    "docs:dev": "vitepress dev website",
+    "docs:build": "vitepress build website",
+    "docs:preview": "vitepress preview website",
+    "docs:check": "pnpm exec vitest run tests/docs-search.test.ts tests/docs-examples.test.ts tests/docs-output.test.ts && pnpm docs:build && node scripts/check-docs.mjs"
   },
   "devDependencies": {
     "@types/node": "24.10.1",
@@ -32,7 +36,9 @@
     "acorn": "8.18.0",
     "cldr-core": "49.0.0",
     "esbuild": "0.28.2",
+    "minisearch": "7.2.0",
     "typescript": "7.0.2",
+    "vitepress": "1.6.4",
     "vitest": "4.1.11"
   }
 }
