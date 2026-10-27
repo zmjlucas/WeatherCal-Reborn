@@ -13,7 +13,13 @@ const exec = promisify(execFile);
 
 /** Keep the same validation and user-region preservation as the in-app updater. */
 export function prepareUpload(installed, fresh, buildInfo) {
-  const annotated = `// Commit: ${buildInfo.commit}\n// Build time: ${buildInfo.time}\n${fresh}`;
+  const builtAt = new Date(buildInfo.time);
+  const offset = -builtAt.getTimezoneOffset();
+  const localTime = new Date(builtAt.getTime() + offset * 60_000).toISOString().slice(0, -1);
+  const hours = String(Math.floor(Math.abs(offset) / 60)).padStart(2, '0');
+  const minutes = String(Math.abs(offset) % 60).padStart(2, '0');
+  const time = `${localTime}${offset >= 0 ? '+' : '-'}${hours}:${minutes}`;
+  const annotated = `// Commit: ${buildInfo.commit}\n// Build time: ${time}\n${fresh}`;
   if (installed === null) {
     splitScript(annotated);
     return annotated;
