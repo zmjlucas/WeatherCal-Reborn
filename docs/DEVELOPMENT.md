@@ -60,6 +60,20 @@ QWeather when no provider is stored: choose OpenWeather in Weather preferences
 to keep using an existing saved key, or configure QWeather through Other settings. Leave the shared legacy engine available while other old
 scripts still use it.
 
+## Widget refresh interval
+
+In Edit preferences, open **Overall settings → Widget refresh interval** to
+set the earliest next refresh in minutes. The default is **15 minutes** for
+every layout, including layouts with `rain`. Enter a positive whole number;
+missing, blank or invalid values fall back to 15 minutes. Existing saved
+preferences receive this default automatically.
+
+The setting is stored as `widget.refreshInterval` and also works in legacy
+settings-object layouts. It sets Scriptable's `refreshAfterDate`;
+[iOS decides the actual refresh time](https://docs.scriptable.app/listwidget/#refreshafterdate)
+and may run the script later. Weather, rain and location retain their separate
+cache ages: a widget refresh only fetches data whose cache needs updating.
+
 ## Custom items and backgrounds
 
 Existing custom methods and helpers remain supported. The engine keeps the original `this`-based internal context and public names, including `runSetup(name, iCloudInUse, codeFilename, gitHubUrl)` and `createWidget(layout, name, iCloudInUse, custom)`. `layout` can be a text DSL/ASCII string or a complete legacy settings object with a `layout` field.
@@ -255,8 +269,9 @@ are at most 15 minutes and its time series covers the current time. The summary
 is cached with the parsed forecast; older caches without that field trigger a
 refresh. Missing/blank summaries, missing/invalid/gapped data,
 unsupported coverage, denied access and expired offline data show unavailable.
-The widget requests another refresh after five minutes without postponing an
-earlier requested refresh; [iOS controls the actual refresh time](https://docs.scriptable.app/listwidget/#refreshafterdate).
+The widget's next refresh follows **Overall settings → Widget refresh interval**
+(15 minutes by default). The rain item uses that shared schedule;
+[iOS controls the actual refresh time](https://docs.scriptable.app/listwidget/#refreshafterdate).
 
 Current/hourly/daily weather and minutely requests share host sequencing,
 one-second pacing and 429 cooldown, including legacy body-level 429 errors.

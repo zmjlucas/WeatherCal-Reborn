@@ -13,6 +13,7 @@ export interface WidgetSettings {
   padding: NumericSetting;
   widgetPadding: PaddingSettings;
   tintIcons: string;
+  refreshInterval: NumericSetting;
   updateLocation: NumericSetting;
   instantDark: boolean;
 }
@@ -162,6 +163,7 @@ export function settingsValues(schema: EditingSettings): ParsedSettings {
       padding: schema.widget.padding.val,
       widgetPadding: schema.widget.widgetPadding.val,
       tintIcons: schema.widget.tintIcons.val,
+      refreshInterval: schema.widget.refreshInterval.val,
       updateLocation: schema.widget.updateLocation.val,
       instantDark: schema.widget.instantDark.val,
     },

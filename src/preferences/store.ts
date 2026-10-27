@@ -3,7 +3,7 @@ import { settingsValues } from '../types/settings';
 import type { WeatherCalContext } from '../types/context';
 import type { CalendarReference, EditableCategory, EditingSettings, ParsedSettings } from '../types/settings';
 
-const numericFields = new Set(['padding', 'updateLocation', 'numberOfEvents', 'minutesAfter', 'numberOfDays', 'showTomorrow', 'numberOfReminders', 'showWithin', 'tomorrowShownAtHour', 'spacing', 'showHours', 'showDays', 'size']);
+const numericFields = new Set(['padding', 'refreshInterval', 'updateLocation', 'numberOfEvents', 'minutesAfter', 'numberOfDays', 'showTomorrow', 'numberOfReminders', 'showWithin', 'tomorrowShownAtHour', 'spacing', 'showHours', 'showDays', 'size']);
 
 function isCalendarSelection(value: unknown): value is (string | CalendarReference)[] {
   return Array.isArray(value) && value.every((item: unknown) => typeof item === 'string' || (isRecord(item) && typeof item.identifier === 'string' && (item.title === undefined || typeof item.title === 'string')));

@@ -20,12 +20,9 @@ test('rain item renders the API summary without depending on future weather sett
   await service.rain(column);
   assert.deepEqual(texts(column), ['Rain in 20 minutes']);
   assert.equal(descendants(column).find(node => node.type === 'text')?.url, 'https://www.qweather.com/');
-  assert.equal(service.widget.refreshAfterDate?.getTime(), rainNow + 5 * 60000);
-  service.widget.refreshAfterDate = new Date(rainNow + 60000);
   const cachedColumn = new Stack();
   await service.rain(cachedColumn);
   assert.deepEqual(texts(cachedColumn), ['Rain in 20 minutes']);
-  assert.equal(service.widget.refreshAfterDate.getTime(), rainNow + 60000);
   assert.equal(requests.length, 1);
 });
 
@@ -90,10 +87,13 @@ test('rain item reports unavailable and requires QWeather rather than inventing 
 
 test('rain is available through real layouts and layouts without it make no minutely requests', async t => {
   const { service, requests } = await renderContext(t);
+  service.writePreference(null, { widget: { refreshInterval: '25' } }, service.prefPath);
   const plain = await service.createWidget('row\ncolumn\ntext(Hello)', service.name, false);
   assert.deepEqual(texts(plain), ['Hello']);
+  assert.equal(plain.refreshAfterDate?.toISOString(), '2026-10-26T04:25:00.000Z');
   assert.equal(requests.length, 0);
   const widget = await service.createWidget('row\ncolumn\nrain', service.name, false);
   assert.deepEqual(texts(widget), ['Rain in 20 minutes']);
+  assert.equal(widget.refreshAfterDate?.toISOString(), '2026-10-26T04:25:00.000Z');
   assert.equal(requests.length, 1);
 });

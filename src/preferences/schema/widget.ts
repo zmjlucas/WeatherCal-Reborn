@@ -42,6 +42,11 @@ export default async function(this: WeatherCalContext, getFromCalendar: GetCalen
           type: "enum",
           options: [this.enum.icons.never,this.enum.icons.always,this.enum.icons.dark,this.enum.icons.light,],
         },
+        refreshInterval: {
+          val: "15",
+          name: "Widget refresh interval",
+          description: "Minimum time between widget refreshes, in minutes. Enter a positive whole number. Default is 15. iOS may refresh later.",
+        },
         updateLocation: {
           val: "60",
           name: "Location update frequency",

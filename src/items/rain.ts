@@ -11,9 +11,6 @@ export default {
       this.provideText(chinese ? '短临降水预报需要和风天气' : 'Rain nowcast requires QWeather', stack, this.format.smallTemp);
       return;
     }
-    // This is a refresh request, not a promise of an exact iOS update time.
-    const refresh = new Date(this.now.getTime() + 5 * 60000);
-    if (!this.widget.refreshAfterDate || refresh < this.widget.refreshAfterDate) this.widget.refreshAfterDate = refresh;
     const { forecast, outlook } = this.data.rain || {};
     if (!forecast?.summary || !outlook) {
       this.provideText(chinese ? '短临降水预报暂不可用' : 'Rain forecast unavailable', stack, this.format.smallTemp);
