@@ -8,7 +8,7 @@ Upstream reference: the project linked in the [README credits](../README.md#cred
 | Local/iCloud standalone widget, protected updates, duplicate widgets, custom object | `src/entry.ts`, `src/widget.ts` | integration and layout tests |
 | Solid, automatic/custom gradient, light/dark Photos images, custom backgrounds | `src/widget.ts`, `src/core/gradient.ts`, `src/setup/backgrounds.ts` | layout/setup/distribution tests |
 | Recursive row/column/auto/flow DSL, fixed/min/max dimensions, scoped alignment, fixed/flexible spaces | `src/layout/parser.ts`, `geometry.ts`, `placement.ts` | parser and planner tests |
-| Bounded candidate planning, ordered flow, movable auto children, complete plans and failure diagnostics | `src/layout/planner.ts`, `candidates.ts` | planner tests |
+| Family presets before bounded search, ordered flow, movable auto children, complete plans and failure diagnostics | `src/layout/planner.ts`, `presets.ts`, `candidates.ts` | planner and adaptive layout tests |
 | Automatic screen-profile viewports, manual overrides and plan-to-native-stack rendering | `src/layout/viewport.ts`, `device-profiles.ts`, `renderer.ts` | viewport, renderer and standalone tests |
 | Prepared built-in/custom modules, shared data loading, width-dependent estimated text geometry and presentation variants | `src/items/registry.ts`, `presentation/`, `src/layout/data-session.ts` | prepared-item tests |
 | Text/enum/bool/font/multi-value/multi-select editing; localization; default merging | `src/preferences/` | preference tests |
@@ -57,7 +57,9 @@ The layout engine validates names/options before loading item data, captures
 one presentation snapshot per instance, and evaluates candidates without native
 view creation. Successful plans retain all selected instances and configured
 fields. Width-dependent heights account for wrapping and the item's existing
-line-limit rules; automatic adaptation keeps configured font sizes. Space
+line-limit rules. Automatic regions first retain configured font sizes, then
+try measured 90%/80%/70% sizes with a 10pt floor for larger text. Manual siblings
+and saved font preferences stay unchanged. Space
 shortages and search exhaustion produce distinct diagnostics. These estimates
 do not establish native text fit or calibrated device dimensions.
 

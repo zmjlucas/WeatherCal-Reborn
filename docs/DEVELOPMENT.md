@@ -158,6 +158,10 @@ After installing the widget and optional converter, verify these device-dependen
 - Small, medium and large previews plus home-screen rendering with manual,
   auto, flow and nested layouts. Check multiple automatic regions, long text,
   unavailable data, fixed dimensions and a deliberately overfull layout.
+- Preset and search fallback with `auto(padding:12,gap:8)[current,rain,future]`;
+  verify smaller fonts on constrained small widgets, original fonts when they
+  fit, the 10pt adaptation floor, and unchanged manual siblings. Native text
+  clipping cannot be established by the offline measurement tests.
 - Light/dark solid and gradient backgrounds; both image appearances; custom background.
 - Calendar/reminder permissions, selected lists, all-day/ongoing events, overdue reminders.
 - OpenWeather key/subscription, correct units/locality, forecast and sunrise times; cached offline rendering.

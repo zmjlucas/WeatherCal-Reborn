@@ -67,10 +67,38 @@ Use `flow` when the listed reading order must stay the same:
 const layout = `flow(padding: 12)[rain, current, future]`
 ```
 
-Both containers compare rows, columns, groups of two or three columns, and a
-full-width item above or below grouped items. `auto` may move its direct children;
+Both containers first try family-specific preset structures: rows, columns,
+grids, a full-width band above columns, and a side panel beside stacked items.
+Small widgets prioritize side groups, medium widgets horizontal groups, and
+large widgets vertical bands. Presets use actual content measurements and
+allocated widths; they do not assign fixed pixel positions or remove fields.
+`auto` may move its direct children;
 `flow` preserves their order when the resolved tree is read row by row. Neither
 container can move an item out of a manual group.
+
+If no preset fits, the engine searches additional orders and groups. If the
+original fonts still cannot fit, it repeats presets and search at 90%, 80%, then
+70% of the configured font sizes. Text originally at least 10pt never shrinks
+below 10pt; smaller configured text stays at its original size. The first
+successful stage wins, so a full-size solution takes priority over smaller text.
+Only content inside `auto` or `flow` is eligible. Manual siblings retain their
+font sizes, and explicit padding, gaps, dimensions and variant choices remain
+constraints. Saved font preferences are unchanged.
+
+For example, this same layout can use a side group with smaller text on small,
+and original-size text on medium/large when the current data fits:
+
+```js
+const layout = `auto(padding: 12, gap: 8)[
+  current(textAlign: "start"),
+  rain(textAlign: "end"),
+  future(textAlign: "end")
+]`
+```
+
+Long forecasts, large fonts or many selected fields can still exceed a small
+widget. The engine reports a fit diagnostic when all readable candidates fail;
+it does not silently hide content to make a preset fit.
 
 Use `row` and `column` to keep a structure fixed. Automatic regions can appear
 inside either:
@@ -176,9 +204,10 @@ before content loading begins.
 | `symbol("cloud.fill")` | SF Symbol; the string maps to `name`, also written `symbol(name: "cloud.fill")`; `normal` |
 
 For example, `current(variant: "stacked")` fixes the stacked presentation.
-Variants preserve configured fields and fonts. Tomorrow's daytime and nighttime
+Variants preserve configured fields and font faces. Tomorrow's daytime and nighttime
 rain probabilities remain separate. Layout adaptation does not remove entries,
-hide descriptions or reduce font sizes. Existing item line-limit rules still
+or hide descriptions. Automatic regions may use the bounded font fallback above;
+measurements and native rendering use the same selected size. Existing item line-limit rules still
 apply, and their height estimates account for those limits.
 
 Explicit sunrise/sunset items always render their named event; after sunset,
@@ -266,6 +295,15 @@ placement)` receives the selected variant, content width/height and inherited
 text alignment. It fills that allocation synchronously without fetching data
 or choosing another variant.
 
+A prepared custom item may opt into font adaptation with
+`atFontScale(scale): PreparedItem`. It must return a deterministic snapshot of
+the same content with the same variant IDs, matching scaled measurements and
+renderer, without data requests or native view creation. The renderer uses the
+snapshot selected during planning. Keep the original snapshot immutable and
+apply the same 10pt floor (or retain text already smaller than 10pt). Custom items
+without this method keep their original typography. Built-in items implement
+this contract automatically.
+
 Use `state: "empty"` or `"error"` with a visible presentation when data is
 missing. `effects.refreshAfterDate` requests a refresh; the renderer merges
 requests by earliest date, including the widget refresh interval configured in
@@ -284,15 +322,22 @@ output without measurements do not satisfy this contract.
 | `ITEM_CONTRACT_INVALID` | A custom item or measurement violates the module contract |
 | `CONSTRAINT_CONFLICT` | A directly checked constraint is inconsistent, such as a root size that differs from the viewport |
 | `NO_CANDIDATE_FITS` | The evaluated candidate family cannot fit all selected content |
-| `SEARCH_LIMIT_REACHED` | Search stopped before finding a complete feasible candidate |
-| `SEARCH_TRUNCATED` | A complete plan was found, but search stopped before considering all candidates |
+| `SEARCH_LIMIT_REACHED` | A hard candidate or measurement budget was exhausted before finding a complete layout |
+| `SEARCH_TRUNCATED` | A complete plan was found after bounded frontier or stage pruning |
+| `FONT_ADAPTED` | A complete plan uses smaller fonts in its automatic regions |
 
 The parser allows at most 128 nodes, 12 nesting levels, and 12 direct children
 per automatic region. Default planning budgets are 256 structural candidates
-per automatic region (across proposed widths) and 4,096 distinct measurements
-per plan; each intermediate frontier retains at most 24 combinations. These are engine budgets, not Scriptable
+per automatic region (across widths, preset/search stages and font scales) and
+4,096 distinct measurements per plan. Structural quotas reserve attempts for
+later stages; caches avoid measuring an unchanged item/width/scale twice.
+Each intermediate frontier retains at most 24 combinations. These are engine budgets, not Scriptable
 platform limits. Search is deterministic for the same snapshot and configuration
 and does not exhaust every possible arrangement.
+
+Successful pure planner results expose `strategy` (`manual`, `presets`, or
+`search`) and `fontScale`; resolved adapted items carry their selected scale.
+Frontier pruning alone does not produce `SEARCH_LIMIT_REACHED`.
 
 A failed plan produces a diagnostic widget rather than a partial content tree.
 Try a larger verified viewport, fewer selected items, smaller configured fonts,

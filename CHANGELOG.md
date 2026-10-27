@@ -18,9 +18,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- Family-specific layout presets before general auto/flow search, including side panels beside stacked items. When original fonts do not fit, automatic content tries measured 90%/80%/70% fonts with a 10pt floor, preserving selected content and manual constraints. Custom prepared items can opt in through `atFontScale`.
 - Bounded, deterministic layout planning with width-dependent height estimates, fixed/min/max dimensions, local alignment, explicit gaps/padding and complete-plan diagnostics.
 - Automatic viewport detection for small, medium and large widgets using sourced screen-size profiles. Blank or `auto` settings select detection; manual per-family and programmatic dimensions take priority. Home-screen runs and app previews use their own selected family. Profiles assume standard icons; unknown screens require a manual override.
 - Layout syntax, custom-module and viewport-calibration documentation. Automated geometry tests and reference size tables do not replace device validation.
+
+### Fixed
+
+- Small weather layouts no longer rely only on fixed-font row/band structures. Duplicate structures are deduplicated, search budgets are shared across fallback stages, and frontier pruning alone no longer reports `SEARCH_LIMIT_REACHED`.
 
 ## [0.1.0] - 2026-10-26
 
