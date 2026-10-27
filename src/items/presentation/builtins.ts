@@ -51,8 +51,8 @@ export async function prepareBuiltin(name: keyof typeof items, host: WeatherCalC
         if (available == null) { state = 'empty'; fallback = messages[name]; }
       }
       if (['current', 'future', 'forecast', 'daily', 'hourly'].includes(name)) {
-        if (context.data.weatherError) { state = 'error'; fallback = messages.weather; }
-        else if (name === 'current' && context.data.weather?.currentTemp == null) { state = 'error'; fallback = messages.weather; }
+        // A failed refresh can still leave usable provider cache data.
+        if (name === 'current' && context.data.weather?.currentTemp == null) { state = 'error'; fallback = messages.weather; }
         else if (name !== 'current') {
           const weather = context.data.weather!;
           const hourly = name === 'hourly' || name === 'future' && context.now.getHours() < Number(context.settings.weather.tomorrowShownAtHour);
@@ -63,7 +63,10 @@ export async function prepareBuiltin(name: keyof typeof items, host: WeatherCalC
             : weather.forecast.slice(start, start + count).some(day => day.High !== null || day.Low !== null || day.Condition !== 100);
           const rain = name === 'future' && context.settings.weather.showRain && (hourly ? weather.nextHourRain != null :
             weather.tomorrowRain != null || weather.tomorrowRainByPeriod?.daytime != null || weather.tomorrowRainByPeriod?.nighttime != null);
-          if (!available && !rain) { state = 'empty'; fallback = messages.forecast; }
+          if (!available && !rain) {
+            state = context.data.weatherError ? 'error' : 'empty';
+            fallback = context.data.weatherError ? messages.weather : messages.forecast;
+          }
         }
       }
     } catch {

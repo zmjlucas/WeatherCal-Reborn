@@ -130,6 +130,36 @@ test('empty and failing data have visible measured states', async t => {
   expect(failed.state).toBe('error'); expect(texts(render(failed, Stack)).join(' ')).toMatch(/weather.*unavailable/i);
 });
 
+test('weather refresh errors preserve usable cached content in every prepared variant', async t => {
+  const { Stack } = installScriptable(t);
+  const host = await fixture();
+  const layout = column(...['current', 'future', 'forecast', 'daily', 'hourly'].map((name, index) => item(name, `root/${index}`)));
+  const fresh = await prepareItems(layout, host);
+  host.data.weatherError = 'QWeather rate limit reached.';
+  const cached = await prepareItems(layout, host);
+  for (const [id, entry] of cached) {
+    expect(entry.state).toBe('ready');
+    for (const variant of entry.variants) {
+      expect(texts(render(entry, Stack, variant.id))).toEqual(texts(render(fresh.get(id)!, Stack, variant.id)));
+    }
+  }
+});
+
+test('weather refresh errors without usable content remain visible errors', async t => {
+  const { Stack } = installScriptable(t);
+  const host = await fixture();
+  host.data.weatherError = 'QWeather rate limit reached.';
+  Object.assign(host.data.weather!, {
+    currentTemp: null, forecast: [], hourly: [], nextHourRain: null, tomorrowRain: null,
+    tomorrowRainByPeriod: { daytime: null, nighttime: null },
+  });
+  const prepared = await prepareItems(column(...['current', 'future', 'forecast', 'daily', 'hourly'].map((name, index) => item(name, `root/${index}`))), host);
+  for (const entry of prepared.values()) {
+    expect(entry.state).toBe('error');
+    expect(texts(render(entry, Stack))).toEqual(['Weather unavailable']);
+  }
+});
+
 test('unavailable forecast values are explicit empty states and sun entries remain visible at night', async t => {
   const { Stack } = installScriptable(t);
   const host = await fixture();
