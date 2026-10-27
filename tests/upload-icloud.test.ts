@@ -15,7 +15,7 @@ import { createEnvironment, required, texts } from './helpers/scriptable';
 
 const installed = scriptFixture('const layout = `row\ncolumn\ntext(My layout)`; const custom = {};', 'const oldEngine = 1;', '// Variables used by Scriptable.\n// icon-color: red; icon-glyph: cloud;\n');
 const fresh = scriptFixture('const layout = `reset`; const custom = {};', 'const newEngine = 2;');
-const buildInfo = { commit: 'a1b2c3d', time: '2026-10-27T04:05:06.789Z' };
+const buildInfo = { commit: 'a1b2c3d', time: '2026-10-27T04:05:06.789Z', uploadTime: '2026-10-27T04:06:07.890Z' };
 
 test.each([
   { zone: 'Asia/Shanghai', time: '2026-10-27T04:05:06.789Z', expected: '2026-10-27T12:05:06.789+08:00' },
@@ -23,15 +23,15 @@ test.each([
   { zone: 'America/New_York', time: '2026-01-27T04:05:06.789Z', expected: '2026-01-26T23:05:06.789-05:00' },
   { zone: 'America/New_York', time: '2026-07-27T04:05:06.789Z', expected: '2026-07-27T00:05:06.789-04:00' },
   { zone: 'UTC', time: '2026-10-27T04:05:06.789Z', expected: '2026-10-27T04:05:06.789+00:00' },
-])('upload build time uses device timezone $zone at $time', async ({ zone, time, expected }) => {
+])('build and upload times use device timezone $zone at $time', async ({ zone, time, expected }) => {
   const { stdout } = await promisify(execFile)(process.execPath, ['--input-type=module', '-e', `
     import { prepareUpload } from './scripts/upload-icloud.mjs';
-    const source = prepareUpload(null, JSON.parse(process.argv[1]), { commit: 'a1b2c3d', time: process.argv[2] });
-    console.log(source.split('\\n')[1]);
+    const source = prepareUpload(null, JSON.parse(process.argv[1]), { commit: 'a1b2c3d', time: process.argv[2], uploadTime: process.argv[2] });
+    console.log(source.split('\\n').slice(1, 3).join('\\n'));
   `, JSON.stringify(fresh), time], {
     cwd: new URL('..', import.meta.url), env: { ...process.env, TZ: zone },
   });
-  assert.equal(stdout.trim(), '// Build time: ' + expected);
+  assert.equal(stdout.trim(), `// Build time: ${expected}\n// Upload time: ${expected}`);
 });
 
 test('upload preparation retains installed customizations while replacing the engine', () => {
@@ -53,14 +53,25 @@ test('upload preparation refuses invalid installed source, downloads and incompa
 
 test('repeated uploads replace build information and preserve installed customizations', () => {
   const first = prepareUpload(installed, fresh, buildInfo);
-  const next = prepareUpload(first, fresh, { commit: 'b2c3d4e', time: '2026-10-27T05:06:07.890Z' });
+  const next = prepareUpload(first, fresh, { commit: 'b2c3d4e', time: '2026-10-27T05:06:07.890Z', uploadTime: '2026-10-27T05:07:08.901Z' });
   assert.equal(next.split('\n')[0], '// Commit: b2c3d4e');
   assert.equal(Date.parse(required(next.split('\n')[1]).replace('// Build time: ', '')), Date.parse('2026-10-27T05:06:07.890Z'));
+  assert.equal(Date.parse(required(next.split('\n')[2]).replace('// Upload time: ', '')), Date.parse('2026-10-27T05:07:08.901Z'));
   assert.equal(next.match(/^\/\/ Commit:/gm)?.length, 1);
   assert.equal(next.match(/^\/\/ Build time:/gm)?.length, 1);
+  assert.equal(next.match(/^\/\/ Upload time:/gm)?.length, 1);
   assert.equal(splitScript(next).user, splitScript(installed).user);
   assert.equal(splitScript(next).engine, splitScript(fresh).engine);
   assert(next.includes('icon-color: red; icon-glyph: cloud;'));
+});
+
+test('uploads upgrade two-line build headers while preserving installed customizations', () => {
+  const previous = '// Commit: abc1234\n// Build time: 2026-10-27T11:00:00.000+08:00\n' + installed;
+  const next = prepareUpload(previous, fresh, buildInfo);
+  assert.equal(next.split('\n')[0], '// Commit: a1b2c3d');
+  assert.equal(Date.parse(required(next.split('\n')[2]).replace('// Upload time: ', '')), Date.parse(buildInfo.uploadTime));
+  assert.equal(next.match(/^\/\/ Build time:/gm)?.length, 1);
+  assert.equal(splitScript(next).user, splitScript(installed).user);
 });
 
 async function fixture(t: TestContext) {
@@ -179,7 +190,8 @@ test('first upload uses the complete validated fresh bundle', () => {
   const result = prepareUpload(null, fresh, buildInfo);
   assert.equal(result.split('\n')[0], '// Commit: a1b2c3d');
   assert.equal(Date.parse(required(result.split('\n')[1]).replace('// Build time: ', '')), Date.parse(buildInfo.time));
-  assert.equal(result.split('\n').slice(2).join('\n'), fresh);
+  assert.equal(Date.parse(required(result.split('\n')[2]).replace('// Upload time: ', '')), Date.parse(buildInfo.uploadTime));
+  assert.equal(result.split('\n').slice(3).join('\n'), fresh);
   assert.deepEqual(splitScript(result).engine, splitScript(fresh).engine);
   assert.throws(() => prepareUpload(null, '<html>build failed</html>', buildInfo));
 });

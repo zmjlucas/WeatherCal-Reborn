@@ -13,13 +13,15 @@ const exec = promisify(execFile);
 
 /** Keep the same validation and user-region preservation as the in-app updater. */
 export function prepareUpload(installed, fresh, buildInfo) {
-  const builtAt = new Date(buildInfo.time);
-  const offset = -builtAt.getTimezoneOffset();
-  const localTime = new Date(builtAt.getTime() + offset * 60_000).toISOString().slice(0, -1);
-  const hours = String(Math.floor(Math.abs(offset) / 60)).padStart(2, '0');
-  const minutes = String(Math.abs(offset) % 60).padStart(2, '0');
-  const time = `${localTime}${offset >= 0 ? '+' : '-'}${hours}:${minutes}`;
-  const annotated = `// Commit: ${buildInfo.commit}\n// Build time: ${time}\n${fresh}`;
+  const [buildTime, uploadTime] = [buildInfo.time, buildInfo.uploadTime].map(value => {
+    const date = new Date(value);
+    const offset = -date.getTimezoneOffset();
+    const localTime = new Date(date.getTime() + offset * 60_000).toISOString().slice(0, -1);
+    const hours = String(Math.floor(Math.abs(offset) / 60)).padStart(2, '0');
+    const minutes = String(Math.abs(offset) % 60).padStart(2, '0');
+    return `${localTime}${offset >= 0 ? '+' : '-'}${hours}:${minutes}`;
+  });
+  const annotated = `// Commit: ${buildInfo.commit}\n// Build time: ${buildTime}\n// Upload time: ${uploadTime}\n${fresh}`;
   if (installed === null) {
     splitScript(annotated);
     return annotated;
@@ -65,8 +67,10 @@ export async function upload(args = process.argv.slice(2)) {
   const { stdout: commit } = await exec('git', ['rev-parse', '--short', 'HEAD'], { cwd: root });
   const buildInfo = { commit: commit.trim(), time: new Date().toISOString() };
   const artifacts = await build();
-  const replacement = prepareUpload(current.source, artifacts['one.js'], buildInfo);
-  console.log(replacement.split('\n').slice(0, 2).join('\n'));
+  const replacement = prepareUpload(current.source, artifacts['one.js'], {
+    ...buildInfo, uploadTime: new Date().toISOString(),
+  });
+  console.log(replacement.split('\n').slice(0, 3).join('\n'));
   if (args[0] === '--check') {
     console.log(`${success} Validated target: ${target} (no upload)`);
     return;

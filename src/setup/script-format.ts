@@ -111,7 +111,7 @@ export function validateSource(source: string, filename = 'script.js'): void {
 
 const markers = ['// WeatherCal: user begin', '// WeatherCal: user end',
   '// WeatherCal: engine begin', '// WeatherCal: engine end'] as const;
-const buildHeader = /^\/\/ Commit: [0-9a-f]+\r?\n\/\/ Build time: [^\r\n]+\r?\n/;
+const buildHeader = /^\/\/ Commit: [0-9a-f]+\r?\n\/\/ Build time: [^\r\n]+\r?\n(?:\/\/ Upload time: [^\r\n]+\r?\n)?/;
 
 export interface ScriptParts { prefix: string; user: string; engine: string }
 
