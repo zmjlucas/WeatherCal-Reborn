@@ -149,7 +149,7 @@ export function createEnvironment(options: EnvironmentOptions = {}) {
     Timer: { schedule: (delay: number, _repeats: boolean, callback: () => void) => { delays.push(delay); callback(); } },
     UUID: { string: () => crypto.randomUUID() },
     LinearGradient: class {}, SFSymbol: { named: (name: string) => ({ image: { symbol: name } }) },
-    Device: { locale: () => 'en_US', batteryLevel: () => 0.57, isCharging: () => false },
+    Device: { locale: () => 'en_US', batteryLevel: () => 0.57, isCharging: () => false, screenSize: () => ({width:393, height:852}) },
     Calendar: { forEvents: async (): Promise<unknown[]> => [], forReminders: async (): Promise<unknown[]> => [] },
     CalendarEvent: { today: async (): Promise<unknown[]> => [], between: async (_start: Date, _end: Date): Promise<unknown[]> => [] },
     Reminder: { all: async (): Promise<unknown[]> => [], allIncomplete: async (): Promise<unknown[]> => [] },
@@ -160,7 +160,7 @@ export function createEnvironment(options: EnvironmentOptions = {}) {
     Data: { fromPNG: (value: unknown) => ({ toBase64String: () => Buffer.from(JSON.stringify(value)).toString('base64') }), fromBase64String: (value: string): unknown => JSON.parse(Buffer.from(value, 'base64').toString()) },
     Image: { fromData: (value: unknown) => value },
     WebView: class { url?: string; loadURL(url: string) { this.url = url; } async present() {} },
-    config: { runsInApp: false, runsInWidget: true }, args: { widgetParameter: null as string | null }, console,
+    config: { runsInApp: false, runsInWidget: true, widgetFamily: undefined as string | undefined }, args: { widgetParameter: null as string | null }, console,
   };
   return { globals, local, cloud, alerts, responses, requests, exports, downloads, secrets, delays, Stack: TestNode as unknown as new () => TestNode & WidgetStack & ListWidget };
 }

@@ -19,7 +19,7 @@ async function execute(source: string, env: Environment, name = 'Test Widget') {
   const preferences = '/library/weather-cal-preferences-' + name;
   if (!files.fileExists(preferences)) files.writeString(preferences, JSON.stringify({widget:dimensions}));
   // VM receives only Scriptable boundary objects and standard ECMAScript built-ins.
-  const sandbox = { ...env.globals, config: {...env.globals.config, widgetFamily: 'large'}, Date, module: { filename: '/documents/' + name + '.js' } };
+  const sandbox = { ...env.globals, config: {...env.globals.config, widgetFamily: env.globals.config.widgetFamily ?? 'large'}, Date, module: { filename: '/documents/' + name + '.js' } };
   const initialKeys = Object.keys(sandbox).sort();
   await vm.runInNewContext('(async () => {\n' + source + '\n})()', sandbox);
   assert.deepEqual(Object.keys(sandbox).sort(), initialKeys);
@@ -75,6 +75,33 @@ test('final standalone script completes once when a custom renderer throws', asy
   const source = customizedBundle(required(artifacts['one.js']), 'const layout = `failing`; const custom = { items: { failing: {prepare() { throw new Error("Fixture custom failure"); }} } };');
   await execute(source, env);
   assert(texts(required(env.globals.Script.widget)).join(' ').includes('Fixture custom failure'));
+});
+
+test('standalone auto viewport uses the actual home family or selected app preview', async () => {
+  const artifacts = await buildArtifacts();
+  const source = customizedBundle(required(artifacts['one.js']), 'const layout = `auto[text("Detected"),battery]`; const custom = {};');
+  for (const inApp of [false,true]) {
+    for (const family of ['small','medium','large']) {
+      const env = createEnvironment();
+      env.globals.config.runsInApp = inApp;
+      env.globals.config.runsInWidget = !inApp;
+      // Conflicting stored preview must not affect home widgets; stale host family
+      // must not affect app previews. Landscape reports use the same profile.
+      env.globals.config.widgetFamily = inApp ? 'large' : family;
+      env.globals.Device.screenSize = () => ({width:852,height:393});
+      env.local.writeString('/library/weather-cal-setup', 'true');
+      env.local.writeString('/library/weather-cal-Test Widget', '{"type":"color","color":"123456"}');
+      env.local.writeString('/library/weather-cal-preferences-Test Widget', JSON.stringify({widget:{preview:inApp ? family : 'large',mediumViewport:'auto'}}));
+      await execute(source, env);
+      const widget = required(env.globals.Script.widget);
+      assert.equal(widget.preview, inApp ? family : undefined);
+      assert(texts(widget).includes('Detected'));
+      assert(texts(widget).includes('57%'));
+      assert.equal(widget.children[0]?.size.width, family === 'small' ? 158 : 338);
+      assert.equal(widget.children[0]?.size.height, family === 'large' ? 354 : 158);
+      assert.equal(env.requests.length, 0);
+    }
+  }
 });
 
 test('the widget keeps local items available when calendar and reminder access is denied', async t => {

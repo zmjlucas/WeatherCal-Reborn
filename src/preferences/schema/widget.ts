@@ -31,18 +31,18 @@ export default async function(this: WeatherCalContext, getFromCalendar: GetCalen
         },
         smallViewport: {
           val: "",
-          name: "Small viewport",
-          description: "Measured zero-padding widget width x height in logical points. Required for small widgets; see docs/LAYOUT.md.",
+          name: "Small viewport override",
+          description: "Leave blank or enter auto to detect the widget size. Enter width x height in logical points to override it.",
         },
         mediumViewport: {
           val: "",
-          name: "Medium viewport",
-          description: "Measured zero-padding widget width x height in logical points. Required for medium widgets; see docs/LAYOUT.md.",
+          name: "Medium viewport override",
+          description: "Leave blank or enter auto to detect the widget size. Enter width x height in logical points to override it.",
         },
         largeViewport: {
           val: "",
-          name: "Large viewport",
-          description: "Measured zero-padding widget width x height in logical points. Required for large widgets; see docs/LAYOUT.md.",
+          name: "Large viewport override",
+          description: "Leave blank or enter auto to detect the widget size. Enter width x height in logical points to override it.",
         },
         tintIcons: {
           val: this.enum.icons.never,

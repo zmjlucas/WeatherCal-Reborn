@@ -75,12 +75,27 @@ test('layout diagnostics occur before data requests and no partial content is re
   expect(texts(unknown).join(' ')).toContain('UNKNOWN_ITEM');
   expect(prepared).toBe(0);
   expect(env.requests).toEqual([]);
-  const missing = await code.createWidget('current', 'Missing', false, undefined, {family:'large'});
-  expect(texts(missing).join(' ')).toContain('VIEWPORT_UNKNOWN');
+  env.globals.Device.screenSize = () => ({width:777,height:999});
+  const unsupported = await code.createWidget('current', 'Unsupported', false, undefined, {family:'large'});
+  expect(texts(unsupported).join(' ')).toContain('VIEWPORT_UNKNOWN');
   expect(env.requests).toEqual([]);
   const noFit = await code.createWidget('column[value,value]', 'Small', false, {items:{value:module}}, {family:'small',viewport:{width:50,height:25}});
   expect(texts(noFit).join(' ')).toContain('NO_CANDIDATE_FITS');
   expect(texts(noFit)).not.toContain('content');
+});
+
+test('widget creation detects the active family and manual overrides bypass device access', async t => {
+  const env = installScriptable(t);
+  env.globals.config.widgetFamily = 'medium';
+  const code = create();
+  const automatic = inspect(await code.createWidget('text("Automatic")', 'Automatic', false));
+  expect(texts(automatic)).toEqual(['Automatic']);
+  expect(automatic.children[0]?.size).toMatchObject({width:338,height:158});
+  env.globals.Device.screenSize = () => { throw new Error('Device unavailable'); };
+  env.local.writeString('/library/weather-cal-preferences-Manual', JSON.stringify({widget:{mediumViewport:'310 x 150'}}));
+  const manual = inspect(await code.createWidget('text("Manual")', 'Manual', false));
+  expect(texts(manual)).toEqual(['Manual']);
+  expect(manual.children[0]?.size).toMatchObject({width:310,height:150});
 });
 
 test('automatic background and selected sun items share one data load per creation', async t => {

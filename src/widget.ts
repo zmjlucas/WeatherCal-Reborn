@@ -68,7 +68,7 @@ export default {
           small: this.settings.widget.smallViewport,
           medium: this.settings.widget.mediumViewport,
           large: this.settings.widget.largeViewport,
-        }, options, config.runsInWidget ? config.widgetFamily : undefined)
+        }, options, config.runsInWidget ? config.widgetFamily : undefined, () => Device.screenSize())
         prepared = await prepareItems(ast, this, custom?.items, session)
         const plan = planLayout(ast, viewport, prepared)
         if (!plan.ok) throw new LayoutError(plan.diagnostics[0]!)

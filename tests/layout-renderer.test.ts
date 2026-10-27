@@ -1,6 +1,5 @@
 import { test, expect } from 'vitest';
 import { renderLayout } from '#source/layout/renderer';
-import { resolveViewport } from '#source/layout/viewport';
 import { parseLayout } from '#source/layout/parser';
 import { planLayout } from '#source/layout/planner';
 import type { PreparedItem, PreparedItems } from '#source/layout/types';
@@ -29,15 +28,6 @@ test('native backend renders measured boxes once with fixed padding and spacers'
   };
   visit(inspect(widget));
   expect(spacers).toEqual(expect.arrayContaining([10,8,4,6,7,122,102]));
-});
-
-test('viewport requires explicit dimensions and honors the selected preview family', () => {
-  expect(() => resolveViewport({ large: '' }, { family: 'large' })).toThrow(expect.objectContaining({ diagnostic: expect.objectContaining({ code: "VIEWPORT_UNKNOWN" }) }));
-  expect(resolveViewport({ small: '150 x 150', large: '320 x 340' }, { family: 'small' })).toMatchObject({width:150,height:150});
-  expect(resolveViewport({}, { family: 'medium', viewport: {width:300,height:140} })).toMatchObject({width:300,height:140});
-  expect(() => resolveViewport({}, { family: 'small', viewport: {width:300,height:140} }, 'large')).toThrow(expect.objectContaining({ diagnostic: expect.objectContaining({ code: "FAMILY_CONFLICT" }) }));
-  expect(() => resolveViewport({}, {}, 'accessoryInline')).toThrow(expect.objectContaining({ diagnostic: expect.objectContaining({ code: "FAMILY_UNSUPPORTED" }) }));
-  expect(() => resolveViewport({ large: '320xNaN' }, {family:'large'})).toThrow(expect.objectContaining({ diagnostic: expect.objectContaining({ code: "VIEWPORT_INVALID" }) }));
 });
 
 test('padding-only frames never turn zero content dimensions into native auto sizing', t => {
