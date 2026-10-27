@@ -10,6 +10,8 @@ An unofficial rewrite of the original [Weather-Cal](https://github.com/mzeryck/W
 1. Install [Scriptable](https://scriptable.app/) on your iPhone or iPad.
 2. Create a new script named **WeatherCal-Reborn-Setup**, paste the code below, and run it (or download from [WeatherCal-Reborn-Setup.js](https://github.com/zmjlucas/WeatherCal-Reborn/releases/latest/download/WeatherCal-Reborn-Setup.js)).
 
+<!-- Generated from WeatherCal-Reborn-Setup.js. Edit that file, then run pnpm readme:sync. -->
+<!-- setup-script:begin -->
 ```javascript
 const name = 'WeatherCal-Reborn', repo = 'zmjlucas/WeatherCal-Reborn';
 const alert = new Alert();
@@ -35,6 +37,7 @@ try {
   await alert.presentAlert();
 } finally { Script.complete(); }
 ```
+<!-- setup-script:end -->
 
 The installer downloads `WeatherCal-Reborn-vX.X.X.js` from the latest GitHub release, saves it as `WeatherCal-Reborn.js`, removes itself, and attempts to launch the widget script. If it does not launch, run **WeatherCal-Reborn** manually. If **WeatherCal-Reborn-Setup** remains in your script list, delete it after installation. Existing `WeatherCal-Reborn.js` files are never overwritten.
 
