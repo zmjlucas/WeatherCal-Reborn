@@ -8,7 +8,7 @@ An unofficial rewrite of the original [Weather-Cal](https://github.com/mzeryck/W
 ## Quick Start
 
 1. Install [Scriptable](https://scriptable.app/) on your iPhone or iPad.
-2. Create a new script named **WeatherCal Setup**, paste the code below, and run it.
+2. Create a new script named **WeatherCal-Reborn-Setup**, paste the code below, and run it (or download from [WeatherCal-Reborn-Setup.js](https://github.com/zmjlucas/WeatherCal-Reborn/releases/latest/download/WeatherCal-Reborn-Setup.js)).
 
 ```javascript
 const name = 'WeatherCal-Reborn', repo = 'zmjlucas/WeatherCal-Reborn';
@@ -36,7 +36,7 @@ try {
 } finally { Script.complete(); }
 ```
 
-The installer downloads `WeatherCal-Reborn-vX.X.X.js` from the latest GitHub release, saves it as `WeatherCal-Reborn.js`, removes itself, and attempts to launch the widget script. If it does not launch, run **WeatherCal-Reborn** manually. If **WeatherCal Setup** remains in your script list, delete it after installation. Existing `WeatherCal-Reborn.js` files are never overwritten.
+The installer downloads `WeatherCal-Reborn-vX.X.X.js` from the latest GitHub release, saves it as `WeatherCal-Reborn.js`, removes itself, and attempts to launch the widget script. If it does not launch, run **WeatherCal-Reborn** manually. If **WeatherCal-Reborn-Setup** remains in your script list, delete it after installation. Existing `WeatherCal-Reborn.js` files are never overwritten.
 
 3. Follow the first-run prompts: grant the requested permissions, choose a weather provider (or skip weather), enter its credentials, and choose a background.
 4. Add a Scriptable widget to your Home Screen, edit the widget, and select **WeatherCal-Reborn** as its script. Run the script again to change preferences or preview it.
