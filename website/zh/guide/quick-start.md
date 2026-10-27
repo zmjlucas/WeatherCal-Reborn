@@ -1,6 +1,6 @@
 # 快速开始 {#quick-start}
 
-本流程需要先安装使用当前布局引擎的WeatherCal-Reborn脚本。
+开始前，请安装使用当前布局引擎的WeatherCal-Reborn脚本。
 如果仍在使用旧格式，请先完成[迁移](./migrate.md)。
 
 ## 设置布局 {#set-the-layout}
@@ -18,7 +18,7 @@
 只复制反引号之间的文本。
 
 这个示例选择`current`、`rain`和`future`。
-当降雨数据不可用时，`rain`会显示数据可用性说明。
+降雨数据不可用时，`rain`会显示提示。
 参见[内置内容项](../reference/items.md)。
 
 ## 显示小组件 {#show-the-widget}

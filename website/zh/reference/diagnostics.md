@@ -28,7 +28,7 @@
 | `UNKNOWN_VARIANT` | 纯规划器找不到指定变体 | 提供与布局一致的已准备变体。 |
 | `ITEM_CONTRACT_INVALID` | 模块或测量结果违反契约 | 检查[自定义内容项契约](./custom-items.md)。 |
 
-内容项名称和私有选项会在加载内容前校验。
+引擎在加载内容前校验内容项名称和私有选项。
 未知的容器属性也会产生`INVALID_PROPERTY`。
 
 ## 规划失败 {#planning-failures}

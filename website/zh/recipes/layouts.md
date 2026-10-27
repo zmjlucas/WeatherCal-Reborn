@@ -1,7 +1,6 @@
 # 布局示例 {#layout-examples}
 
 以下各布局模式都使用`current`、`rain`和`future`。
-手动结构和自动结构选择相同的天气内容项。
 组合示例还会在自动区域外放置`date`。
 
 每个代码块都来自共享示例源文件。
@@ -14,8 +13,7 @@
 
 <<< ../../examples/layouts.ts#auto
 
-引擎可以选择行、列、网格、横向通栏或侧边分组。
-具体结构由内容测量结果决定。
+引擎根据内容测量结果选择行、列、网格、横向通栏或侧边分组。
 
 ## 保持阅读顺序 {#flow}
 
@@ -35,7 +33,7 @@
 
 该布局将`current`、`rain`和`future`保持在同一水平行中。
 引擎不会缩小这个手动布局的字号。
-当内容超出视口时，该结构可能无法生成布局方案。
+内容需要的空间超出视口时，这个布局可能无法生成方案。
 
 ## 组合固定区域与自动区域 {#semi-auto}
 
@@ -43,8 +41,7 @@
 
 <<< ../../examples/layouts.ts#semi-auto
 
-`date`始终位于自动区域上方。
-它的字号保持不变。
+`date`始终位于自动区域上方，字号保持不变。
 自动区域可以调整天气内容项的顺序和分组。
 
 `auto`或`flow`中的手动分组会保持完整。
@@ -68,4 +65,4 @@
 
 - [VIEWPORT_UNKNOWN](../errors/viewport-unknown.md)：自动识别无法选择屏幕配置时，提供实测边界。
 - [NO_CANDIDATE_FITS](../errors/no-candidate-fits.md)：减少内容所需空间，或移除过于严格的尺寸限制。
-- [SEARCH_LIMIT_REACHED](../errors/search-limit-reached.md)：缩小搜索问题，或指定更多结构。
+- [SEARCH_LIMIT_REACHED](../errors/search-limit-reached.md)：减少搜索组合，或指定更多结构。
