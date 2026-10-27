@@ -11,8 +11,11 @@ export interface WidgetSettings {
   units: string;
   preview: string;
   padding: NumericSetting;
-  widgetPadding: PaddingSettings;
+  smallViewport: string;
+  mediumViewport: string;
+  largeViewport: string;
   tintIcons: string;
+  refreshInterval: NumericSetting;
   updateLocation: NumericSetting;
   instantDark: boolean;
 }
@@ -24,6 +27,8 @@ export interface LocalizationSettings {
   nightGreeting: string;
   nextHourLabel: string;
   tomorrowLabel: string;
+  daytimeRainLabel: string;
+  nighttimeRainLabel: string;
   noEventMessage: string;
   noRemindersMessage: string;
   durationMinute: string;
@@ -74,7 +79,6 @@ export interface EventsSettings {
   showLocation: boolean;
   selectCalendars: CalendarSelection;
   showCalendarColor: string;
-  noEventBehavior: string;
   url: string;
 }
 
@@ -87,29 +91,20 @@ export interface RemindersSettings {
   todayOnly: boolean;
   selectLists: CalendarSelection;
   showListColor: string;
-  noRemindersBehavior: string;
   url: string;
-}
-
-export interface SunriseSettings {
-  showWithin: NumericSetting;
-  separateElements: boolean;
 }
 
 export interface WeatherSettings {
   provider: string;
   locale: string;
   showLocation: boolean;
-  horizontalCondition: boolean;
   showCondition: boolean;
   showHighLow: boolean;
   showRain: boolean;
   tomorrowShownAtHour: NumericSetting;
   spacing: NumericSetting;
-  horizontalHours: boolean;
   showHours: NumericSetting;
   showHoursFormat: string;
-  horizontalForecast: boolean;
   showDays: NumericSetting;
   showDaysFormat: string;
   showToday: boolean;
@@ -131,7 +126,6 @@ export interface SettingsValues {
   date: DateSettings;
   events: EventsSettings;
   reminders: RemindersSettings;
-  sunrise: SunriseSettings;
   weather: WeatherSettings;
   symbol: SymbolSettings;
 }
@@ -158,8 +152,11 @@ export function settingsValues(schema: EditingSettings): ParsedSettings {
       units: schema.widget.units.val,
       preview: schema.widget.preview.val,
       padding: schema.widget.padding.val,
-      widgetPadding: schema.widget.widgetPadding.val,
+      smallViewport: schema.widget.smallViewport.val,
+      mediumViewport: schema.widget.mediumViewport.val,
+      largeViewport: schema.widget.largeViewport.val,
       tintIcons: schema.widget.tintIcons.val,
+      refreshInterval: schema.widget.refreshInterval.val,
       updateLocation: schema.widget.updateLocation.val,
       instantDark: schema.widget.instantDark.val,
     },
@@ -170,6 +167,8 @@ export function settingsValues(schema: EditingSettings): ParsedSettings {
       nightGreeting: schema.localization.nightGreeting.val,
       nextHourLabel: schema.localization.nextHourLabel.val,
       tomorrowLabel: schema.localization.tomorrowLabel.val,
+      daytimeRainLabel: schema.localization.daytimeRainLabel.val,
+      nighttimeRainLabel: schema.localization.nighttimeRainLabel.val,
       noEventMessage: schema.localization.noEventMessage.val,
       noRemindersMessage: schema.localization.noRemindersMessage.val,
       durationMinute: schema.localization.durationMinute.val,
@@ -217,7 +216,6 @@ export function settingsValues(schema: EditingSettings): ParsedSettings {
       showLocation: schema.events.showLocation.val,
       selectCalendars: schema.events.selectCalendars.val,
       showCalendarColor: schema.events.showCalendarColor.val,
-      noEventBehavior: schema.events.noEventBehavior.val,
       url: schema.events.url.val,
     },
     reminders: {
@@ -229,27 +227,19 @@ export function settingsValues(schema: EditingSettings): ParsedSettings {
       todayOnly: schema.reminders.todayOnly.val,
       selectLists: schema.reminders.selectLists.val,
       showListColor: schema.reminders.showListColor.val,
-      noRemindersBehavior: schema.reminders.noRemindersBehavior.val,
       url: schema.reminders.url.val,
-    },
-    sunrise: {
-      showWithin: schema.sunrise.showWithin.val,
-      separateElements: schema.sunrise.separateElements.val,
     },
     weather: {
       provider: schema.weather.provider.val,
       locale: schema.weather.locale.val,
       showLocation: schema.weather.showLocation.val,
-      horizontalCondition: schema.weather.horizontalCondition.val,
       showCondition: schema.weather.showCondition.val,
       showHighLow: schema.weather.showHighLow.val,
       showRain: schema.weather.showRain.val,
       tomorrowShownAtHour: schema.weather.tomorrowShownAtHour.val,
       spacing: schema.weather.spacing.val,
-      horizontalHours: schema.weather.horizontalHours.val,
       showHours: schema.weather.showHours.val,
       showHoursFormat: schema.weather.showHoursFormat.val,
-      horizontalForecast: schema.weather.horizontalForecast.val,
       showDays: schema.weather.showDays.val,
       showDaysFormat: schema.weather.showDaysFormat.val,
       showToday: schema.weather.showToday.val,

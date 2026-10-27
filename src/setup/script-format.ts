@@ -111,12 +111,13 @@ export function validateSource(source: string, filename = 'script.js'): void {
 
 const markers = ['// WeatherCal: user begin', '// WeatherCal: user end',
   '// WeatherCal: engine begin', '// WeatherCal: engine end'] as const;
+const buildHeader = /^\/\/ Commit: [0-9a-f]+\r?\n\/\/ Build time: [^\r\n]+\r?\n(?:\/\/ Upload time: [^\r\n]+\r?\n)?/;
 
 export interface ScriptParts { prefix: string; user: string; engine: string }
 
 /** Only real comments count as boundaries; quoted examples cannot split a script. */
 export function splitScript(source: string): ScriptParts {
-  if (!source.startsWith('// Variables used by Scriptable.')) throw new Error('Missing Scriptable metadata.');
+  if (!source.replace(buildHeader, '').startsWith('// Variables used by Scriptable.')) throw new Error('Missing Scriptable metadata.');
   const comments: Comment[] = [];
   const tree = parse(source, { ecmaVersion: 2020, sourceType: 'module', allowAwaitOutsideFunction: true, onComment: comments });
   const found = markers.map(marker => comments.filter(comment => source.slice(comment.start, comment.end) === marker));
@@ -143,7 +144,9 @@ export function mergeScriptUpdate(installed: string, downloaded: string): string
   for (const name of userBindings) {
     if (engineBindings.has(name)) throw new Error(`The new engine conflicts with user variable ${name}.`);
   }
-  const combined = `${current.prefix}${markers[0]}${current.user}${markers[1]}\n\n// !! DO NOT MODIFY CODE BELOW !!\n${markers[2]}${next.engine}${markers[3]}\n`;
+  // Build information belongs to the incoming engine, while Scriptable metadata belongs to the user.
+  const prefix = (next.prefix.match(buildHeader)?.[0] ?? '') + current.prefix.replace(buildHeader, '');
+  const combined = `${prefix}${markers[0]}${current.user}${markers[1]}\n\n// !! DO NOT MODIFY CODE BELOW !!\n${markers[2]}${next.engine}${markers[3]}\n`;
   splitScript(combined); // Detect collisions between new engine bindings and user edits.
   return combined;
 }

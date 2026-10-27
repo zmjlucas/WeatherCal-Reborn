@@ -15,10 +15,10 @@ async function widgetContext() {
   for (const [name, format] of Object.entries(context.format)) styles.set(format, name);
   const settings = {
       date: { dynamicDateSize: false, staticDateSize: 'small', smallDateFormat: 'small', largeDateLineOne: 'line1', largeDateLineTwo: 'line2', url: '' },
-      events: { showCalendarColor: 'circle', showLocation: true, showEventLength: 'time', labelFormat: 'day', noEventBehavior: 'message' },
-      reminders: { showListColor: 'none', useRelativeDueDate: true, noRemindersBehavior: 'message' },
-      weather: { showLocation: true, horizontalCondition: true, showCondition: true, showHighLow: true, tomorrowShownAtHour: '20', showRain: true, showHours: '3', showDays: '3', showHoursFormat: 'hour', showDaysFormat: 'day', showToday: false },
-      widget: {}, sunrise: { showWithin: '0', separateElements: false },
+      events: { showCalendarColor: 'circle', showLocation: true, showEventLength: 'time', labelFormat: 'day' },
+      reminders: { showListColor: 'none', useRelativeDueDate: true },
+      weather: { showLocation: true, showCondition: true, showHighLow: true, tomorrowShownAtHour: '20', showRain: true, showHours: '3', showDays: '3', showHoursFormat: 'hour', showDaysFormat: 'day', showToday: false },
+      widget: {},
       symbol: { size: '18', tintColor: '', padding: {} }
     };
   for (const key of Object.keys(settings) as Array<keyof typeof settings>) Object.assign(context.settings[key], settings[key]);
@@ -103,17 +103,14 @@ test('events group days, show calendar colors and format location and duration',
   assert.match(required(column.children[0]!.url), /^calshow:/);
 });
 
-test('empty calendar and reminders support messages or another custom item', async t => {
+test('empty calendar and reminders show their localized messages', async t => {
   const { Stack } = installScriptable(t);
   const context = await widgetContext();
   const column = new Stack();
   await context.events(column);
   await context.reminders(column);
   assert.deepEqual(texts(column), ['No events', 'No reminders']);
-  context.settings.events.noEventBehavior = 'custom';
-  context.custom = { custom: (stack: WidgetContainer) => stack.addText('Replacement') };
-  await context.events(column);
-  assert.equal(texts(column).at(-1), 'Replacement');
+
 });
 
 test('reminders style the due date separately and mark overdue titles', async t => {
@@ -133,7 +130,7 @@ test('current weather renders location, condition, temperature and high/low', as
   const { Stack } = installScriptable(t);
   const context = await widgetContext();
   const column = new Stack();
-  await context.current(column);
+  await context.current(column, true);
   assert.deepEqual(texts(column), ['Cupertino', '22°', 'Clear', '16', '27']);
   assert.equal(column.children[0]!.url, 'weather://');
   assert(descendants(column).some(x => x.image?.tempBar));
@@ -189,32 +186,19 @@ test('forecast uses widget time for labels and honors disabled URLs', async t =>
   }
 });
 
-test('sun chooses sunset by day and tomorrow sunrise after sunset', async t => {
+test('sun items render the named event during the day and tomorrow sunrise after sunset', async t => {
   const { Stack } = installScriptable(t);
   const context = await widgetContext();
-  let column = new Stack();
-  await context.sunrise(column);
-  assert(descendants(column).some(x => x.image?.symbol === 'sunset.fill'));
-  assert.deepEqual(texts(column), ['18:00']);
-  context.now.setHours(22);
-  column = new Stack();
-  await context.sunrise(column);
-  assert(descendants(column).some(x => x.image?.symbol === 'sunrise.fill'));
-  assert.deepEqual(texts(column), ['6:00']);
-  context.settings.sunrise.showWithin = '30';
-  column = new Stack();
-  await context.sunset(column);
-  assert.equal(column.children.length, 0);
-});
-
-test('separate sunset and sunrise items preserve their explicit choice', async t => {
-  const { Stack } = installScriptable(t);
-  const context = await widgetContext();
-  context.settings.sunrise.separateElements = true;
-  for (const name of ['sunrise', 'sunset'] as const) {
-    const column = new Stack();
-    await context[name](column);
-    assert(descendants(column).some(x => x.image?.symbol === name + '.fill'));
+  context.formatTime = date => date.toISOString();
+  for (const hour of [10, 22]) {
+    context.now.setHours(hour);
+    for (const name of ['sunrise', 'sunset'] as const) {
+      const column = new Stack();
+      await context[name](column);
+      assert(descendants(column).some(x => x.image?.symbol === name + '.fill'));
+      const expected = name === 'sunset' ? context.data.sun!.sunset : hour === 22 ? context.data.sun!.tomorrow : context.data.sun!.sunrise;
+      assert.deepEqual(texts(column), [new Date(expected!).toISOString()]);
+    }
   }
 });
 
@@ -276,7 +260,7 @@ test('reminders support absolute due dates, list colors and custom links', async
 test('current weather supports vertical conditions and missing temperatures', async t => {
   const { Stack } = installScriptable(t);
   const context = await widgetContext();
-  Object.assign(context.settings.weather, { horizontalCondition: false, showLocation: false, showHighLow: false, urlCurrent: 'none' });
+  Object.assign(context.settings.weather, { showLocation: false, showHighLow: false, urlCurrent: 'none' });
   required(context.data.weather).currentTemp = null;
   const column = new Stack();
   await context.current(column);
@@ -287,10 +271,10 @@ test('current weather supports vertical conditions and missing temperatures', as
 test('horizontal forecasts preserve dates, icons and displayed temperatures', async t => {
   const { Stack } = installScriptable(t);
   const context = await widgetContext();
-  Object.assign(context.settings.weather, { horizontalHours: true, horizontalForecast: true, showDays: '2', showHours: '2' });
+  Object.assign(context.settings.weather, { showDays: '2', showHours: '2' });
   for (const hourly of [false, true]) {
     const column = new Stack();
-    await context.forecast(column, hourly);
+    await context.forecast(column, hourly, true);
     assert.equal(column.children[0]!.direction, 'horizontal');
     assert.equal(column.children[0]!.children.length, 2);
     assert.equal(descendants(column).filter(x => x.image?.condition === 800)!.length, 2);

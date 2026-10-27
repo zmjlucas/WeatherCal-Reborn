@@ -29,62 +29,108 @@ consecutive build identity, and the 500-line source module limit.
 3. Rename the installed script before setup if desired. Each script name owns
    separate preferences and backgrounds.
 4. Run it to choose a background, grant desired permissions, and optionally
-   choose QWeather (default) or OpenWeather and configure its credentials. Select that script in a Scriptable home-screen widget.
+   choose QWeather (default) or OpenWeather and configure its credentials.
+   Viewport size is detected automatically on known screens. Leave the viewport
+   overrides blank or enter `auto`; enter manual dimensions only when needed. See
+   [automatic viewport detection](LAYOUT.md#automatic-viewport-detection).
+   Select that script in a Scriptable home-screen widget.
 5. Edit `layout` and `custom` between the `WeatherCal: user begin` and
    `WeatherCal: user end` comments. Keep all four boundary comments intact.
-   The generated engine occupies its own marked region.
+   The generated engine occupies its own marked region. Layout strings use the
+   [recursive layout syntax](LAYOUT.md); custom items provide size estimates under
+   `custom.items`.
 
 Install `dist/weather-cal-converter.js` separately if you need conversion.
 Both scripts start with Scriptable metadata. `dist/` is generated and ignored.
 
-The Update code menu downloads `one.js` from the latest WeatherCal-Reborn
-release, validates its boundaries and JavaScript syntax, preserves the installed
+The Update code menu queries GitHub's latest stable release metadata and downloads
+the matching `WeatherCal-Reborn-v<version>.js` asset, validates its boundaries and JavaScript syntax, preserves the installed
 metadata and user region exactly, and replaces only the engine region. Failed
 downloads or validation leave the existing script untouched. Preferences,
-background images and the script name are preserved. Release download URLs
+background images and the script name are preserved. A preserved user region
+can still contain obsolete layout syntax or custom callbacks; updates do not
+convert them. Rewrite these using [the current layout contract](LAYOUT.md)
+when moving to this breaking engine version. Release download URLs
 will work only once a maintainer publishes the new assets; until then use local
 builds. Reset requires explicit confirmation and restores the downloaded
-script's default user region, then removes only this widget's data.
+script's default user region, then removes only this widget's data. Pre-releases
+are not selected by the latest stable release endpoint. Older installations that
+use the fixed `one.js` download URL require a one-time manual upgrade, preserving
+the installed script name and editable user region.
 
 ### Moving an existing dual-file installation
 
 There is no automatic replacement of legacy installations. Save a backup of
 your current script and its custom code first. Manually install `one.js` under
-the **same Scriptable name** and storage location, and copy your original layout
-and custom object into the new editable region. Existing preference/background
-filenames and OpenWeather key files remain compatible. Weather now defaults to
+the **same Scriptable name** and storage location. Rewrite the old line-based or
+ASCII layout as one `row`/`column`/`auto`/`flow` tree, and adapt custom item
+functions to `custom.items` modules with measurements. Copy the adapted code
+into the new editable region. Viewport detection is automatic; clear previously
+saved dimensions to enable it, or keep them as manual overrides.
+Existing preference/background filenames and OpenWeather key files remain
+compatible. Weather now defaults to
 QWeather when no provider is stored: choose OpenWeather in Weather preferences
 to keep using an existing saved key, or configure QWeather through Other settings. Leave the shared legacy engine available while other old
 scripts still use it.
 
+## Widget refresh interval
+
+In Edit preferences, open **Overall settings → Widget refresh interval** to
+set the earliest next refresh in minutes. The default is **15 minutes** for
+every layout, including layouts with `rain`. Enter a positive whole number;
+missing, blank or invalid values fall back to 15 minutes. Existing saved
+preferences receive this default automatically.
+
+The setting is stored as `widget.refreshInterval` and is read before planning
+the layout. It sets Scriptable's `refreshAfterDate`;
+[iOS decides the actual refresh time](https://docs.scriptable.app/listwidget/#refreshafterdate)
+and may run the script later. Weather, rain and location retain their separate
+cache ages: a widget refresh only fetches data whose cache needs updating.
+
 ## Custom items and backgrounds
 
-Existing custom methods and helpers remain supported. The engine keeps the original `this`-based internal context and public names, including `runSetup(name, iCloudInUse, codeFilename, gitHubUrl)` and `createWidget(layout, name, iCloudInUse, custom)`. `layout` can be a text DSL/ASCII string or a complete legacy settings object with a `layout` field.
+`createWidget(layout, name, iCloudInUse, custom?, options?)` accepts the recursive
+layout string. Preferences are loaded separately; settings objects and ASCII
+layouts are no longer accepted. Optional `options.family` selects `small`,
+`medium` or `large` for a programmatic preview, and `options.viewport` supplies
+`{ width, height }` in logical points, overriding both preferences and detection.
+Without an override, the engine resolves dimensions from the device's screen
+profile. The installed entry passes its selected preview family before planning.
 
-```js
-const custom = {
-  greeting(column) {
-    code.provideText('Hello from my widget', column, code.format.greeting, true)
-  },
-  background(widget) {
-    widget.backgroundColor = Color.black()
-  }
-}
-```
+Register each custom item as an `ItemModule` under `custom.items`. Its `prepare`
+method captures data and resources once, returns width-dependent size estimates,
+and provides a synchronous renderer for the selected variant. A complete module
+may override a built-in. The [layout guide](LAYOUT.md#custom-itemmodule) includes
+an example and the empty/error-state contract. Shared mutable alignment,
+opaque item callbacks and callbacks triggered by empty event/reminder lists are
+removed.
 
-Custom methods override built-ins. The entry already passes `custom` to `createWidget`. Export saves the full installed script source, preserving these custom methods, plus preferences/backgrounds and embedded image appearances. `createWeatherCal()` is available for independent contexts when another script manages several widgets.
+`custom.background(widget)` can set background styles but must not add layout
+children. The entry passes the custom object to `createWidget`. Export preserves
+the full installed source, preferences/backgrounds and embedded image
+appearances. `createWeatherCal()` still creates independent contexts when
+another script manages several widgets; formatting and data helpers remain
+available through the module's preparation context.
 
-The optional `dist/weather-cal-converter.js` converts a conventional single-ListWidget script into a custom method. It preserves fixed widget parameters, moves content into a stack and removes root presentation/completion calls. Review the generated method before installing it: source with multiple widgets, indirect constructors, template-expression logic or its own setup may require manual adaptation. The converter is a source-editing assistant, not a general JavaScript transpiler.
+The optional `dist/weather-cal-converter.js` rewrites a conventional
+single-ListWidget script into a rendering method. It preserves fixed widget
+parameters, moves content into a stack and removes root presentation/completion
+calls. Its output still requires a measured `ItemModule` wrapper and separation
+of data loading from rendering before use with this layout engine. Source with
+multiple widgets, indirect constructors, template-expression logic or its own
+setup may require further manual adaptation. The converter does not infer
+content sizes or create a complete module contract.
 
 ## Modules and tests
 
-- `src/widget.ts`, `src/layout/`: widget lifecycle, backgrounds and both layout syntaxes.
+- `src/widget.ts`, `src/layout/`: widget lifecycle, viewport resolution, parsing, bounded planning and native rendering.
 - `src/core/`: formatting, symbols/drawing, gradients, prompts and storage.
 - `src/preferences/`: independent schema categories, persistence and editor UI.
 - `src/data/`: calendar/reminder filters, location and weather/sun transports.
-- `src/items/`: rendering, independent of request/persistence implementations.
+- `src/items/registry.ts`, `src/items/presentation/`: validated modules, prepared presentation trees, estimated geometry and synchronous rendering.
+- `src/items/`: built-in content formatting, independent of request/persistence implementations.
 - `src/setup/`: onboarding, menus, background selection and distribution.
-- `src/create.ts`, `src/index.ts`: compatibility composition and optional context factory.
+- `src/create.ts`, `src/index.ts`: context composition and factory.
 - `src/entry.ts`, `src/user.ts`: widget completion flow and editable layout/custom defaults.
 - `src/scriptable/`: independent converter interface.
 - `scripts/`: deterministic build and source checks.
@@ -106,13 +152,28 @@ part of testing, even when credentials have been supplied separately.
 
 After installing the widget and optional converter, verify these device-dependent paths before publishing:
 
-- Small, medium and large previews; home-screen widget with both text and ASCII layouts.
+- Check automatic viewport dimensions for each supported family, device, OS,
+  icon-size and display-zoom setting. If needed, save measured zero-padding
+  dimensions as `width x height` overrides; also check blank and `auto` settings.
+- Small, medium and large previews plus home-screen rendering with manual,
+  auto, flow and nested layouts. Check multiple automatic regions, long text,
+  unavailable data, fixed dimensions and a deliberately overfull layout.
+- Preset and search fallback with `auto(padding:12,gap:8)[current,rain,future]`;
+  verify smaller fonts on constrained small widgets, original fonts when they
+  fit, the 10pt adaptation floor, and unchanged manual siblings. Native text
+  clipping cannot be established by the offline measurement tests.
 - Light/dark solid and gradient backgrounds; both image appearances; custom background.
 - Calendar/reminder permissions, selected lists, all-day/ongoing events, overdue reminders.
 - OpenWeather key/subscription, correct units/locality, forecast and sunrise times; cached offline rendering.
-- Custom item overrides, text/SF Symbols, battery/charging, greetings and week.
+- Prepared custom item overrides, text/SF Symbols, battery/charging, greetings
+  and week. Confirm small-widget tap behavior and medium/large item links.
 - Edit every preference type; duplicate and rename scripts; export/import custom source and images.
 - iCloud hydration; update preserves script; reset preserves other widgets.
+
+The native layout measurements are estimates until these checks are recorded.
+The engine ships sourced reference sizes, not device-validated measurements. Follow the detailed
+[calibration procedure](LAYOUT.md#device-calibration) and retain the device,
+family and configuration with the results.
 
 ## Commits
 
@@ -122,7 +183,7 @@ Keep each commit focused on one responsibility and include its relevant tests. U
 
 ## Releases
 
-Keep `package.json` on Semantic Versioning. Move the Unreleased changelog entries to the release version/date before publication. CI checks changes and uploads the built scripts as an artifact. When a maintainer publishes a release tagged `v<package.json version>`, a separate job attaches `one.js`, `weather-cal-converter.js` and `SHA256SUMS` to that release. No release is created automatically by a commit, and no release was published as part of this refactor.
+Keep `package.json` on Semantic Versioning. Move the Unreleased changelog entries to the release version/date before publication. CI checks changes and uploads the built scripts as an artifact. When a maintainer publishes a release tagged `v<package.json version>`, a separate job attaches only `WeatherCal-Reborn-v<version>.js`, a byte-identical copy of the built `one.js`. Together with GitHub's automatic Source code (zip) and Source code (tar.gz), the release has three downloadable files. Do not upload `one.js`, `weather-cal-converter.js`, or `SHA256SUMS` as release assets. Normal builds and CI artifacts retain their original filenames and checksum manifest. No release is created automatically by a commit, and no release was published as part of this refactor.
 
 
 ## Weather providers
@@ -158,13 +219,34 @@ OpenWeather key/path files and validation helpers remain supported.
 The adapter calls `weather/v1/current`, `hourly?hours=24`, and `daily?days=8`.
 Coordinates are rounded to two decimals. It converts metric temperatures to the
 widget's unit selection, maps weather conditions, and aligns hourly slots using
-forecast timestamps. Daily values include sunrise/sunset; daytime/nighttime rain
-probabilities are not treated as an all-day probability, so QWeather's tomorrow
-rain percentage displays `--`. This change supports existing weather items; it
-does not add AQI, alerts or minutely-rain items. Returned attribution statements
-are retained in the weather data but are not rendered as a widget footer.
+forecast timestamps. Daily values include sunrise/sunset. Tomorrow displays
+daytime and nighttime rain probabilities separately; missing values display
+`--`. They are not combined into an all-day probability. The separate `rain`
+item below provides minutely precipitation timing. Returned weather attribution
+statements are retained in the data but are not rendered as a weather footer.
 
 ### Request budget and failures
+
+The QWeather host-state module, `src/data/qweather-state.ts`, owns credential
+validation and persistence, the opaque cache namespace, same-host serialization,
+cooldown, backoff and authenticated request pacing. Setup uses
+`saveQWeatherCredentials`; it does not know credential names or cooldown paths.
+The provider loader in `src/data/qweather.ts` selects the weather cache, builds
+endpoint paths and interprets responses. Its cache recheck runs inside
+`withQWeatherState`, before `refresh` checks credentials or cooldown, so fresh
+cached weather remains usable without a key. A changed key retains the cache
+namespace and weather cache; a blank key keeps the entered host's saved key.
+Request processing and cache-write failures remain part of the refresh attempt.
+The minutely loader in `src/data/rain.ts` uses the same state module, with
+`refresh(operation, 'minutely')` isolating its product-specific failures while
+sharing host request pacing and rate limits. A changed key clears both cooldowns.
+
+The state module uses Scriptable's existing runtime objects; tests substitute
+offline request and in-memory storage adapters at that internal seam.
+`tests/qweather-state.test.ts` exercises state transitions and request policy;
+`tests/weather-provider-setup.test.ts` checks setup-to-weather behavior. Saving
+credentials during an in-flight request retains the existing sequencing and
+does not provide transactional credential rotation.
 
 - Cold fetch: three sequential requests, spaced at least one second apart.
 - Weather and sunrise reuse a 15-minute cache keyed by provider, host, rounded
@@ -193,6 +275,57 @@ See the official [API Host](https://dev.qweather.com/docs/configuration/api-host
 The current API-Key policy has differing future limit dates in official pages;
 this adapter implements API Key authentication, not JWT signing. Verify the
 account's limits when configuring a deployment.
+
+### Near-term rain item
+
+Add `rain` to the editable `layout` in your installed script. Let `auto` arrange
+it with weather, or place it above an automatic weather group:
+
+```js
+const layout = `column(padding: 12)[rain, auto[current, future]]`
+```
+
+Keep any other desired items in the new tree. Without `rain`, the widget makes
+no minutely requests. The item is independent of **Show percent chance of rain**
+and the switch to Tomorrow.
+It requires QWeather selected in Weather preferences and the same configured
+API Host/Key as regular weather; OpenWeather shows a requires-QWeather message.
+
+The item requests [`/v7/minutely/5m`](https://dev.qweather.com/docs/api/minutely/minutely-precipitation/),
+which covers China with five-minute precipitation amounts for the next two
+hours. The item currently displays the API's `summary` text directly, with a
+QWeather link on that text, replacing the generated prediction and update-time
+line. `src/data/rain-response.ts` still parses the five-minute amounts, snow/rain
+types and update time, and computes `RainOutlook` for later custom summaries.
+Those calculations also continue to check whether the forecast covers now.
+
+Chinese weather language (or Chinese device/widget locale when unset) produces
+Chinese API summaries; other languages use English, following the endpoint's
+[Chinese/English language coverage](https://dev.qweather.com/docs/resource/language/).
+Relative times in a summary refer to the provider's update time; the text is
+shown unchanged between refreshes.
+
+Minutely data has a separate cache, refreshed after five minutes when the script
+runs. Cached data is usable only while both its file age and provider update age
+are at most 15 minutes and its time series covers the current time. The summary
+is cached with the parsed forecast; older caches without that field trigger a
+refresh. Missing/blank summaries, missing/invalid/gapped data,
+unsupported coverage, denied access and expired offline data show unavailable.
+The widget's next refresh follows **Overall settings → Widget refresh interval**
+(15 minutes by default). The rain item uses that shared schedule;
+[iOS controls the actual refresh time](https://docs.scriptable.app/listwidget/#refreshafterdate).
+
+Current/hourly/daily weather and minutely requests share host sequencing,
+one-second pacing and 429 cooldown, including legacy body-level 429 errors.
+Other minutely failures have their own persistent cooldown so they do not block
+ordinary weather. The same retry/backoff rules apply. Cache identities contain
+account scope, location and language; cache files contain no API key or account
+host. Enabling this item adds at most one minutely request per five-minute cache
+refresh for that identity, subject to errors, account limits and iOS scheduling.
+
+Run `pnpm exec vitest run tests/rain-data.test.ts tests/rain-item.test.ts tests/qweather.test.ts`.
+These are simulated-response tests only. Device typography, live minutely API
+access and real-world prediction accuracy have not been verified.
 
 ### Historical manual verification on 2026-10-26
 

@@ -10,3 +10,9 @@ docs/superpowers/
 
 # Local copies of installed scripts may contain private user edits.
 .icloud-backups/
+
+.env
+
+# VitePress build output and development cache.
+website/.vitepress/dist/
+website/.vitepress/cache/

@@ -29,6 +29,14 @@ export default async function(this: WeatherCalContext, getFromCalendar: GetCalen
           val: "Tomorrow",
           name: "Label for tomorrow",
         },
+        daytimeRainLabel: {
+          val: "Day",
+          name: "Label for daytime rain probability",
+        },
+        nighttimeRainLabel: {
+          val: "Night",
+          name: "Label for nighttime rain probability",
+        },
         noEventMessage: {
           val: "Enjoy the rest of your day.",
           name: "No event message",

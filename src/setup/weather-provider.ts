@@ -1,6 +1,5 @@
-import { dataCacheFilename } from '../data/cache';
 import type { WeatherCalContext } from '../types/context';
-import { getQWeatherHost, normalizeQWeatherHost, qweatherCacheScope } from '../data/qweather';
+import { getQWeatherHost, saveQWeatherCredentials } from '../data/qweather-state';
 import { record } from '../types/json';
 
 export default {
@@ -11,7 +10,7 @@ export default {
     ], 'QWeather needs your API Host and key from console.qweather.com. OpenWeather uses its own API key.');
     if (selection < 0 || selection > 1) return firstRun && selection === 2;
     const provider = selection === 0 ? 'qweather' : 'openweather';
-    let host = getQWeatherHost(this.name) || '';
+    const host = getQWeatherHost(this.name) || '';
     if (provider === 'qweather') {
       const prompt = new Alert();
       prompt.title = 'QWeather credentials';
@@ -21,25 +20,12 @@ export default {
       prompt.addAction('Save');
       prompt.addAction('Cancel');
       if (await prompt.presentAlert() !== 0) return false;
-      const normalized = normalizeQWeatherHost(prompt.textFieldValue(0));
-      if (!normalized) {
-        await this.generateAlert('Enter the dedicated qweatherapi.com API Host from your QWeather console.');
+      const error = saveQWeatherCredentials(this.name, prompt.textFieldValue(0), prompt.textFieldValue(1));
+      if (error) {
+        await this.generateAlert(error === 'host'
+          ? 'Enter the dedicated qweatherapi.com API Host from your QWeather console.'
+          : 'Enter a valid QWeather API key.');
         return false;
-      }
-      host = normalized;
-      const keyName = 'weather-cal-qweather-key:' + host;
-      const previous = Keychain.contains(keyName) ? Keychain.get(keyName) : '';
-      const key = prompt.textFieldValue(1).trim() || previous;
-      if (!key || /[\r\n]/.test(key)) {
-        await this.generateAlert('Enter a valid QWeather API key.');
-        return false;
-      }
-      Keychain.set(keyName, key);
-      Keychain.set('weather-cal-qweather-host:' + this.name, host);
-      if (key !== previous) {
-        const files = FileManager.local();
-        const ratePath = files.joinPath(files.libraryDirectory(), dataCacheFilename('qweather-rate', qweatherCacheScope(host)));
-        if (files.fileExists(ratePath)) files.remove(ratePath);
       }
     } else if (!(await this.getWeatherKey(firstRun))) return false;
 
@@ -54,6 +40,7 @@ export default {
     }
     delete this.data.weather;
     delete this.data.sun;
+    delete this.data.rain;
     delete this.data.weatherAttributions;
     delete this.data.weatherError;
     if (provider === 'qweather') await this.generateAlert('QWeather settings saved. Weather will load when you preview the widget.', [firstRun ? 'Continue' : 'OK']);

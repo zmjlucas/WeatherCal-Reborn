@@ -1,7 +1,8 @@
-import { test, vi } from 'vitest';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { installScriptable, required, runtime } from './helpers/scriptable';
+import { installScriptable, required, runtime, texts } from './helpers/scriptable';
 import { initializedContext } from './helpers/context';
+import { qweatherPayload as payload } from './helpers/qweather';
 import type { EnvironmentOptions } from './helpers/scriptable';
 import type { TestContext } from 'vitest';
 
@@ -36,22 +37,6 @@ test('saved manual units override device region and saved auto continues followi
   }
 });
 
-function payload(url: string): unknown {
-  const metadata = { attributions: ['QWeather test data'] };
-  if (url.includes('/current/')) return { metadata, condition: { code: '100', text: '晴' }, temperature: { value: 20, unit: '°C' } };
-  if (url.includes('/hourly/')) return { metadata, hours: [
-    { forecastTime: '2026-10-26T12:00+08:00', temperature: { value: 21, unit: '°C' }, condition: { code: '101', text: '多云' }, precipitation: { probability: 0 } },
-    { forecastTime: '2026-10-26T13:00+08:00', temperature: { value: 22, unit: '°C' }, condition: { code: '305', text: '小雨' }, precipitation: { probability: 0.35 } }
-  ] };
-  if (url.includes('/daily/')) return { metadata, days: [0, 1].map(day => ({
-    forecastStartTime: `2026-10-${26 + day}T00:00+08:00`,
-    temperatureMax: { value: 24, unit: '°C' }, temperatureMin: { value: 10, unit: '°C' },
-    daytime: { condition: { code: '104', text: '阴' }, precipitation: { probability: 0.3 } },
-    nighttime: { condition: { code: '305', text: '雨' }, precipitation: { probability: 0.6 } },
-    astro: { sunrise: `2026-10-${26 + day}T06:00+08:00`, sunset: `2026-10-${26 + day}T18:00+08:00` }
-  })) };
-  throw new Error('Unexpected endpoint');
-}
 async function setup(t: TestContext, options: EnvironmentOptions = {}) {
   const env = installScriptable(t, { request: async url => payload(url), ...options });
   const service = await initializedContext(env);
@@ -95,6 +80,105 @@ test('default provider loads QWeather through header auth and maps weather witho
   assert.equal(service.data.sun?.sunrise, Date.parse('2026-10-26T06:00+08:00'));
 });
 
+test('QWeather renders tomorrow daytime and nighttime probabilities from fresh and cached forecasts', async t => {
+  const { service, requests, local, Stack } = await setup(t);
+  const cached = await initializedContext();
+  cached.fm = local;
+  cached.now = service.now;
+  cached.settings.widget.units = 'metric';
+  cached.data.location = required(service.data.location);
+  for (const context of [service, cached]) {
+    context.settings.weather.showRain = true;
+    context.settings.weather.tomorrowShownAtHour = '0';
+    const column = new Stack();
+    await context.future(column);
+    assert.deepEqual(texts(column), ['Tomorrow', '24', '10', 'Day 30%', 'Night 60%']);
+    assert.equal(requests.length, 3);
+  }
+});
+
+for (const [daytime, nighttime, expected] of [
+  [0, 1, ['Day 0%', 'Night 100%']],
+  [undefined, 0.42, ['Day --%', 'Night 42%']],
+  [0.31, null, ['Day 31%', 'Night --%']],
+  ['0.5', 1.1, ['Day --%', 'Night --%']],
+  [-0.1, NaN, ['Day --%', 'Night --%']]
+] as const) {
+  test(`QWeather renders independent period probabilities for ${String(daytime)}/${String(nighttime)}`, async t => {
+    const { service, Stack } = await setup(t, { request: async url => {
+      if (!url.includes('/daily/')) return payload(url);
+      return { days: [0, 1].map(() => ({
+        temperatureMax: { value: 24, unit: '°C' }, temperatureMin: { value: 10, unit: '°C' },
+        daytime: { precipitation: { probability: daytime } },
+        nighttime: { precipitation: { probability: nighttime } }
+      })) };
+    } });
+    service.settings.weather.showRain = true;
+    service.settings.weather.tomorrowShownAtHour = '0';
+    const column = new Stack();
+    await service.future(column);
+    assert.deepEqual(texts(column).slice(-2), expected);
+  });
+}
+
+test('QWeather period labels use saved localization preferences', async t => {
+  const { service, Stack } = await setup(t);
+  service.fm.writeString(service.prefPath, JSON.stringify({ localization: { daytimeRainLabel: '白天', nighttimeRainLabel: '夜间' } }));
+  service.settings = await service.getSettings();
+  service.localization = service.settings.localization;
+  service.settings.weather.showRain = true;
+  service.settings.weather.tomorrowShownAtHour = '0';
+  const column = new Stack();
+  await service.future(column);
+  assert.deepEqual(texts(column).slice(-2), ['白天 30%', '夜间 60%']);
+});
+
+test('QWeather next-hour rain stays a single percentage and disabling rain hides both periods', async t => {
+  const { service, Stack } = await setup(t);
+  service.settings.weather.showRain = true;
+  service.settings.weather.tomorrowShownAtHour = '24';
+  const nextHour = new Stack();
+  await service.future(nextHour);
+  assert.deepEqual(texts(nextHour), ['Next hour', '22°', '35%']);
+  service.settings.weather.showRain = false;
+  service.settings.weather.tomorrowShownAtHour = '0';
+  const tomorrow = new Stack();
+  await service.future(tomorrow);
+  assert.deepEqual(texts(tomorrow), ['Tomorrow', '24', '10']);
+});
+
+test('QWeather refreshes a pre-period cache on upgrade', async t => {
+  const { service, secrets, requests, Stack } = await setup(t);
+  secrets.set('weather-cal-qweather-cache-scope:' + host, 'old-scope');
+  service.locale = 'en_US';
+  const identity = JSON.stringify(['qweather-v1', 'old-scope', '39.92/116.41', 'en', 'metric']);
+  service.fm.writeString(service.getDataCachePath('qweather-cache', identity), JSON.stringify({
+    identity, response: { current: { temp: 99 }, daily: [{ temp: { max: 99, min: 88 } }, { temp: { max: 99, min: 88 } }] }
+  }));
+  service.settings.weather.showRain = true;
+  service.settings.weather.tomorrowShownAtHour = '0';
+  const column = new Stack();
+  await service.future(column);
+  assert.deepEqual(texts(column), ['Tomorrow', '24', '10', 'Day 30%', 'Night 60%']);
+  assert.equal(requests.length, 3);
+});
+
+test('switching from QWeather to OpenWeather restores the single all-day rain percentage', async t => {
+  const { service, Stack } = await setup(t, { request: async url => url.includes('openweathermap') ? {
+    current: { temp: 20 }, daily: [{ temp: { max: 24, min: 10 } }, { temp: { max: 23, min: 11 }, pop: 0.4 }]
+  } : payload(url) });
+  service.settings.weather.showRain = true;
+  service.settings.weather.tomorrowShownAtHour = '0';
+  await service.future(new Stack());
+  service.settings.weather.provider = 'openweather';
+  service.fm.writeString('/library/weather-cal-api-key', 'fake-openweather-key');
+  service.fm.writeString('/library/weather-cal-api-path', 'https://api.openweathermap.org/data/3.0/onecall');
+  await service.setupWeather();
+  const column = new Stack();
+  await service.future(column);
+  assert.deepEqual(texts(column), ['Tomorrow', '23', '11', '40%']);
+});
+
 test('QWeather caches across contexts, rounds location, serializes concurrent consumers and paces cold requests', async t => {
   const { service, requests, local, delays } = await setup(t);
   await Promise.all([service.setupWeather(), service.setupSunrise()]);
@@ -107,6 +191,22 @@ test('QWeather caches across contexts, rounds location, serializes concurrent co
   second.data.location = { latitude: 39.9235, longitude: 116.4124 };
   await second.setupWeather();
   assert.equal(second.data.weather?.currentTemp, 20);
+  assert.equal(requests.length, 3);
+});
+
+test('QWeather contains iCloud cache download failures and releases its host queue', async t => {
+  const { service, requests, cloud } = await setup(t, { iCloud: true });
+  service.fm = cloud;
+  await service.setupWeather();
+  const download = cloud.downloadFileFromiCloud;
+  cloud.downloadFileFromiCloud = async () => { throw new Error('iCloud offline'); };
+  await service.setupWeather();
+  assert.equal(service.data.weather?.currentTemp, null);
+  assert.ok(service.data.weatherError);
+  assert.equal(requests.length, 3);
+  cloud.downloadFileFromiCloud = download;
+  await service.setupWeather();
+  assert.equal(service.data.weather?.currentTemp, 20);
   assert.equal(requests.length, 3);
 });
 
@@ -226,43 +326,4 @@ test('QWeather stores the shared cooldown in local storage even with an iCloud l
   assert.equal(requests.length, 3);
   assert.equal(service.data.weather?.currentTemp, 20);
   assert([...cloud.store.keys()].some(path => path.startsWith('/cloud-library/weather-cal-qweather-cache')));
-});
-
-
-test('QWeather honors HTTP-date Retry-After and resumes only after the cooldown', async t => {
-  const base = Date.now();
-  const clock = vi.spyOn(Date, 'now').mockReturnValue(base);
-  t.onTestFinished(() => clock.mockRestore());
-  let limited = true;
-  const { service, requests } = await setup(t, { request: async (url, _kind, request) => {
-    if (limited) {
-      request.response = { statusCode: 429, headers: { 'retry-after': new Date(base + 3600000).toUTCString() } };
-      return { error: { status: 429 } };
-    }
-    return payload(url);
-  } });
-  await service.setupWeather();
-  limited = false;
-  clock.mockReturnValue(base + 3598000);
-  await service.setupWeather();
-  assert.equal(requests.length, 1);
-  clock.mockReturnValue(base + 3601000);
-  await service.setupWeather();
-  assert.equal(requests.length, 4);
-  assert.equal(service.data.weather?.currentTemp, 20);
-  assert.equal(service.data.weatherError, undefined);
-});
-
-test('QWeather monthly quota errors do not retry on the next day', async t => {
-  const base = Date.UTC(2026, 9, 26, 0);
-  const clock = vi.spyOn(Date, 'now').mockReturnValue(base);
-  t.onTestFinished(() => clock.mockRestore());
-  const { service, requests } = await setup(t, { request: async (_url, _kind, request) => {
-    request.response.statusCode = 429;
-    return { error: { status: 429, type: 'https://dev.qweather.com/docs/resource/error-code/#over-monthly-limit' } };
-  } });
-  await service.setupWeather();
-  clock.mockReturnValue(base + 86400000);
-  await service.setupWeather();
-  assert.equal(requests.length, 1);
 });

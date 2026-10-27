@@ -66,6 +66,10 @@ export function parseQWeatherPart(kind: 'current' | 'hourly' | 'daily', value: u
         if (typeof time === 'string' && Number.isFinite(Date.parse(time))) day[field] = Date.parse(time) / 1000;
       }
       // Daytime/nighttime probabilities are not an all-day probability.
+      for (const [period, field] of [['daytime', 'daytimePop'], ['nighttime', 'nighttimePop']] as const) {
+        const pop = record(record(source[period]).precipitation).probability;
+        if (finiteNumber(pop) && pop >= 0 && pop <= 1) day[field] = pop;
+      }
       result.daily.push(day);
     }
   }

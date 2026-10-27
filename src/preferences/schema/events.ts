@@ -58,13 +58,6 @@ export default async function(this: WeatherCalContext, getFromCalendar: GetCalen
           type: "enum",
           options: ["rectangle left","rectangle right","circle left","circle right","none"],
         },
-        noEventBehavior: {
-          val: "message",
-          name: "Show when no events remain",
-          description: "When no events remain, show a hard-coded message, a time-based greeting, or nothing.",
-          type: "enum",
-          options: ["message","greeting","none"],
-        },
         url: {
           val: "",
           name: "URL to open when tapped",

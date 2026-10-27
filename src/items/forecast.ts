@@ -2,7 +2,7 @@ import type { WeatherCalContext } from "../types/context";
 // Daily and hourly forecasts share layout rules while bounding reads to available data.
 
 export default {
-  async forecast(this: WeatherCalContext, column: WidgetStack, hourly = false): Promise<void> {
+  async forecast(this: WeatherCalContext, column: WidgetStack, hourly = false, horizontal = false): Promise<void> {
     if (!this.data.weather) await this.setupWeather()
     const weatherData = this.data.weather
     if (!weatherData) throw new Error("Weather setup did not provide weather data.")
@@ -15,7 +15,6 @@ export default {
     const settingUrl = hourly ? (weatherSettings.urlFuture || "") : (weatherSettings.urlForecast || "")
     if (settingUrl.trim() != "none") { weatherStack.url = settingUrl || defaultUrl }
 
-    const horizontal = hourly ? weatherSettings.horizontalHours : weatherSettings.horizontalForecast
     const spacing = (weatherSettings.spacing ? parseInt(String(weatherSettings.spacing)) : 0) + (horizontal ? 0 : 5)
     const outsidePadding = this.padding > spacing ? this.padding - spacing : 0
 
@@ -137,7 +136,7 @@ export default {
     }
   },
 
-  async daily(this: WeatherCalContext, column: WidgetStack): Promise<void> { await this.forecast(column) },
+  async daily(this: WeatherCalContext, column: WidgetStack, horizontal = false): Promise<void> { await this.forecast(column, false, horizontal) },
 
-  async hourly(this: WeatherCalContext, column: WidgetStack): Promise<void> { await this.forecast(column, true) }
+  async hourly(this: WeatherCalContext, column: WidgetStack, horizontal = false): Promise<void> { await this.forecast(column, true, horizontal) }
 };

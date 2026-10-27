@@ -15,6 +15,19 @@ test('updates preserve the installed metadata and user code byte for byte', () =
   assert.equal(after.engine, splitScript(downloaded).engine);
 });
 
+test('updates use the incoming build information instead of retaining stale provenance', () => {
+  const header = '// Commit: a1b2c3d\n// Build time: 2026-10-27T04:05:06.789Z\n// Upload time: 2026-10-27T04:06:07.890Z\n';
+  const installed = header + scriptFixture('const layout = `row`; const custom = {};');
+  const fresh = scriptFixture(undefined, 'const version = 2;');
+  const newHeader = '// Commit: b2c3d4e\n// Build time: 2026-10-27T05:06:07.890Z\n// Upload time: 2026-10-27T05:07:08.901Z\n';
+  for (const incomingHeader of ['', newHeader]) {
+    const result = splitScript(mergeScriptUpdate(installed, incomingHeader + fresh));
+    assert.equal(result.prefix, incomingHeader + splitScript(scriptFixture()).prefix);
+    assert.equal(result.user, splitScript(installed).user);
+    assert.equal(result.engine, splitScript(fresh).engine);
+  }
+});
+
 test('updates reject incomplete, repeated and reordered boundaries', () => {
   const valid = scriptFixture();
   for (const invalid of [

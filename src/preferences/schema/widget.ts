@@ -27,13 +27,22 @@ export default async function(this: WeatherCalContext, getFromCalendar: GetCalen
         padding: {
           val: "5",
           name: "Item padding",
-          description: "The padding around each item. This also determines the approximate widget padding. Default is 5.",
+          description: "Internal padding within each item. Set the outer margin with layout padding. Default is 5.",
         },
-        widgetPadding: {
-          val: { top: "", left: "", bottom: "", right: "" },
-          name: "Custom widget padding",
-          type: "multival",
-          description: "The padding around the entire widget. By default, these values are blank and Weather Cal uses the item padding to determine these values. Transparent widgets often look best with these values at 0.",
+        smallViewport: {
+          val: "",
+          name: "Small viewport override",
+          description: "Leave blank or enter auto to detect the widget size. Enter width x height in logical points to override it.",
+        },
+        mediumViewport: {
+          val: "",
+          name: "Medium viewport override",
+          description: "Leave blank or enter auto to detect the widget size. Enter width x height in logical points to override it.",
+        },
+        largeViewport: {
+          val: "",
+          name: "Large viewport override",
+          description: "Leave blank or enter auto to detect the widget size. Enter width x height in logical points to override it.",
         },
         tintIcons: {
           val: this.enum.icons.never,
@@ -41,6 +50,11 @@ export default async function(this: WeatherCalContext, getFromCalendar: GetCalen
           description: "Decide when icons should match the color of the text around them.",
           type: "enum",
           options: [this.enum.icons.never,this.enum.icons.always,this.enum.icons.dark,this.enum.icons.light,],
+        },
+        refreshInterval: {
+          val: "15",
+          name: "Widget refresh interval",
+          description: "Minimum time between widget refreshes, in minutes. Enter a positive whole number. Default is 15. iOS may refresh later.",
         },
         updateLocation: {
           val: "60",

@@ -1,12 +1,25 @@
 import type { WeatherCalContext } from '../types/context';
 import { parseBackground } from '../types/background';
 import { mergeScriptUpdate, splitScript } from './script-format';
+import { isRecord } from '../types/json';
+
+export const latestReleaseUrl = 'https://api.github.com/repos/zmjlucas/WeatherCal-Reborn/releases/latest';
 
 export default {
   async downloadCode(this: WeatherCalContext, filename: string, url: string, reset = false): Promise<boolean> {
     // A widget may only replace its own installed script.
     if (filename !== this.name) return false;
     try {
+      if (url === latestReleaseUrl) {
+        const release: unknown = await new Request(url).loadJSON();
+        if (!isRecord(release) || typeof release.tag_name !== 'string' || !Array.isArray(release.assets)) return false;
+        const assetName = `WeatherCal-Reborn-${release.tag_name}.js`;
+        const downloadUrl = `https://github.com/zmjlucas/WeatherCal-Reborn/releases/download/${encodeURIComponent(release.tag_name)}/${encodeURIComponent(assetName)}`;
+        const asset = release.assets.find((value: unknown) => isRecord(value) &&
+          value.name === assetName && value.state === 'uploaded' && value.browser_download_url === downloadUrl);
+        if (!asset) return false;
+        url = downloadUrl;
+      }
       const downloaded = await new Request(url).loadString();
       splitScript(downloaded);
       const path = this.fm.joinPath(this.fm.documentsDirectory(), this.name + '.js');

@@ -2,6 +2,15 @@ import { parseBackground } from "./types/background";
 import type { Background } from "./types/background";
 import type { LayoutInput, CustomItems } from "./types/context";
 import type { WeatherCalContext } from "./types/context";
+import { parseLayout } from "./layout/parser";
+import { planLayout } from "./layout/planner";
+import { renderLayout } from "./layout/renderer";
+import { resolveViewport } from "./layout/viewport";
+import { prepareItems } from "./items/registry";
+import { DataSession } from "./layout/data-session";
+import { LayoutError } from "./layout/errors";
+import type { WidgetLayoutOptions } from "./layout/types";
+import { latestReleaseUrl } from "./setup/distribution";
 
 export default {
   initialize(this: WeatherCalContext, name: string, iCloudInUse: boolean): void {
@@ -9,13 +18,13 @@ export default {
       this.fm = iCloudInUse ? FileManager.iCloud() : FileManager.local()
       this.bgPath = this.fm.joinPath(this.fm.libraryDirectory(), "weather-cal-" + this.name)
       this.prefPath = this.fm.joinPath(this.fm.libraryDirectory(), "weather-cal-preferences-" + name)
-      this.widgetUrl = "https://github.com/zmjlucas/WeatherCal-Reborn/releases/latest/download/one.js"
+      this.widgetUrl = latestReleaseUrl
       this.now = new Date()
       this.data = {}
       this.initialized = true
     },
 
-  async createWidget(this: WeatherCalContext, layout: LayoutInput, name: string, iCloudInUse: boolean, custom?: CustomItems): Promise<ListWidget> {
+  async createWidget(this: WeatherCalContext, layout: LayoutInput, name: string, iCloudInUse: boolean, custom?: CustomItems, options: WidgetLayoutOptions = {}): Promise<ListWidget> {
       this.initialize(name, iCloudInUse)
       // iCloud metadata can exist before the preference files are downloaded.
       for (const path of [this.prefPath, this.bgPath]) {
@@ -24,14 +33,8 @@ export default {
         }
       }
 
-      // Determine if we're using the old or new setup.
-      if (typeof layout == "object") {
-        this.settings = layout
-
-      } else {
-        this.settings = await this.getSettings()
-        this.settings.layout = layout
-      }
+      this.settings = await this.getSettings()
+      this.settings.layout = layout
 
       // Shared values.
       this.locale = this.settings.widget.locale
@@ -46,17 +49,45 @@ export default {
       // Widget setup.
       this.widget = new ListWidget()
       this.widget.spacing = 0
+      const refreshInterval = Number(this.settings.widget.refreshInterval)
+      const refreshDate = new Date(this.now.getTime() + refreshInterval * 60000)
+      // iOS controls actual refresh timing; invalid or legacy values use 15 minutes.
+      this.widget.refreshAfterDate = Number.isInteger(refreshInterval) && refreshInterval > 0 && Number.isFinite(refreshDate.getTime())
+        ? refreshDate : new Date(this.now.getTime() + 15 * 60000)
 
-      const verticalPad = this.padding < 10 ? 10 - this.padding : 10
-      const horizontalPad = this.padding < 15 ? 15 - this.padding : 15
+      this.widget.setPadding(0, 0, 0, 0)
 
-      const widgetPad = this.settings.widget.widgetPadding || {}
-      const topPad    = (widgetPad.top !== undefined && String(widgetPad.top).length) ? parseInt(String(widgetPad.top)) : verticalPad
-      const leftPad   = (widgetPad.left !== undefined && String(widgetPad.left).length) ? parseInt(String(widgetPad.left)) : horizontalPad
-      const bottomPad = (widgetPad.bottom !== undefined && String(widgetPad.bottom).length) ? parseInt(String(widgetPad.bottom)) : verticalPad
-      const rightPad  = (widgetPad.right !== undefined && String(widgetPad.right).length) ? parseInt(String(widgetPad.right)) : horizontalPad
-
-      this.widget.setPadding(topPad, leftPad, bottomPad, rightPad)
+      // Resolve the complete plan before creating content views or loading backgrounds.
+      // Layout failures produce a useful widget, never a partial successful layout.
+      const session = new DataSession(this)
+      let tree
+      let prepared
+      try {
+        const ast = parseLayout(layout)
+        const viewport = resolveViewport({
+          small: this.settings.widget.smallViewport,
+          medium: this.settings.widget.mediumViewport,
+          large: this.settings.widget.largeViewport,
+        }, options, config.runsInWidget ? config.widgetFamily : undefined, () => Device.screenSize())
+        prepared = await prepareItems(ast, this, custom?.items, session)
+        const plan = planLayout(ast, viewport, prepared)
+        if (!plan.ok) throw new LayoutError(plan.diagnostics[0]!)
+        for (const diagnostic of plan.diagnostics) console.warn(`${diagnostic.code}: ${diagnostic.message}`)
+        tree = plan.tree
+      } catch (error) {
+        const message = error instanceof LayoutError ? `${error.diagnostic.code}: ${error.message}`
+          : `LAYOUT_FAILED: ${error instanceof Error ? error.message : String(error)}`
+        console.error(message)
+        this.widget.backgroundColor = new Color('16296b')
+        this.widget.setPadding(12, 12, 12, 12)
+        const title = this.widget.addText('Layout needs attention')
+        title.font = Font.boldSystemFont(12)
+        title.textColor = Color.white()
+        const detail = this.widget.addText(message)
+        detail.font = Font.regularSystemFont(10)
+        detail.textColor = Color.white()
+        return this.widget
+      }
 
       // Background setup.
       let background: Background = { type: "color", color: "16296b" }
@@ -72,7 +103,7 @@ export default {
 
       } else if (background.type == "auto") {
         const gradient = new LinearGradient()
-        const gradientSettings = await this.setupGradient()
+        const gradientSettings = await this.setupGradient.call(session.host)
 
         gradient.colors = gradientSettings.color()
         gradient.locations = gradientSettings.position()
@@ -103,26 +134,7 @@ export default {
         }
       }
 
-      // Construct the widget.
-      this.currentRow = undefined
-      this.currentColumn = undefined
-      this.left()
-
-      this.usingASCII = undefined
-      this.currentColumns = []
-      this.rowNeedsSetup = false
-
-      for (const rawLine of (this.settings.layout ?? "").split(/\r?\n/)) {
-        const line = rawLine.trim()
-        if (line == '') { continue }
-        if (this.usingASCII == undefined) {
-          if (/^row(?:\(|$)/.test(line)) { this.usingASCII = false }
-          if (line[0] == "-" && line[line.length-1] == "-") { this.usingASCII = true }
-        }
-        this.usingASCII ? await this.processASCIILine(line) : await this.executeItem(line)
-      }
-      if (this.usingASCII && this.currentColumns.length) await this.processASCIILine("---")
-      if (this.data.weatherError) this.provideText(this.data.weatherError, this.widget, { ...this.format.smallTemp, size: 9 })
+      renderLayout(this.widget, tree, prepared)
       return this.widget
     }
 };

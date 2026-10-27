@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 410" role="img" aria-labelledby="title desc">
+<title id="title">Layout structures</title>
+<desc id="desc">Four schematic structures for auto, flow, manual row, and a column with a nested auto region. The boxes do not show measured device sizes.</desc>
+<style>text{font-family:system-ui,sans-serif;fill:#153542} .label{font-weight:650;font-size:16px} .item{font-size:14px;text-anchor:middle;dominant-baseline:middle}</style>
+<g transform="translate(8 8)">
+<rect width="344" height="184" rx="12" fill="#f3f7f9" stroke="#bdced8"/>
+<text x="16" y="27" class="label">auto</text>
+<rect x="16" y="44" width="304" height="42" rx="6" fill="#d5edf1" stroke="#8fbac3"/>
+<text x="168.0" y="65.0" class="item">rain</text>
+<rect x="16" y="94" width="148" height="72" rx="6" fill="#d5edf1" stroke="#8fbac3"/>
+<text x="90.0" y="130.0" class="item">current</text>
+<rect x="172" y="94" width="148" height="72" rx="6" fill="#d5edf1" stroke="#8fbac3"/>
+<text x="246.0" y="130.0" class="item">future</text>
+</g>
+<g transform="translate(368 8)">
+<rect width="344" height="184" rx="12" fill="#f3f7f9" stroke="#bdced8"/>
+<text x="16" y="27" class="label">flow</text>
+<rect x="16" y="44" width="304" height="34" rx="6" fill="#d5edf1" stroke="#8fbac3"/>
+<text x="168.0" y="61.0" class="item">current</text>
+<rect x="16" y="86" width="304" height="34" rx="6" fill="#d5edf1" stroke="#8fbac3"/>
+<text x="168.0" y="103.0" class="item">rain</text>
+<rect x="16" y="128" width="304" height="38" rx="6" fill="#d5edf1" stroke="#8fbac3"/>
+<text x="168.0" y="147.0" class="item">future</text>
+</g>
+<g transform="translate(8 208)">
+<rect width="344" height="184" rx="12" fill="#f3f7f9" stroke="#bdced8"/>
+<text x="16" y="27" class="label">row</text>
+<rect x="16" y="44" width="96" height="122" rx="6" fill="#d5edf1" stroke="#8fbac3"/>
+<text x="64.0" y="105.0" class="item">current</text>
+<rect x="120" y="44" width="96" height="122" rx="6" fill="#d5edf1" stroke="#8fbac3"/>
+<text x="168.0" y="105.0" class="item">rain</text>
+<rect x="224" y="44" width="96" height="122" rx="6" fill="#d5edf1" stroke="#8fbac3"/>
+<text x="272.0" y="105.0" class="item">future</text>
+</g>
+<g transform="translate(368 208)">
+<rect width="344" height="184" rx="12" fill="#f3f7f9" stroke="#bdced8"/>
+<text x="16" y="27" class="label">column + auto</text>
+<rect x="10" y="83" width="316" height="90" rx="7" fill="none" stroke="#087f8c" stroke-dasharray="5 4"/>
+<rect x="16" y="44" width="304" height="30" rx="6" fill="#e4e9f0" stroke="#8fbac3"/>
+<text x="168.0" y="59.0" class="item">date</text>
+<rect x="16" y="92" width="304" height="30" rx="6" fill="#d5edf1" stroke="#8fbac3"/>
+<text x="168.0" y="107.0" class="item">rain</text>
+<rect x="16" y="130" width="148" height="36" rx="6" fill="#d5edf1" stroke="#8fbac3"/>
+<text x="90.0" y="148.0" class="item">current</text>
+<rect x="172" y="130" width="148" height="36" rx="6" fill="#d5edf1" stroke="#8fbac3"/>
+<text x="246.0" y="148.0" class="item">future</text>
+</g>
+</svg>
