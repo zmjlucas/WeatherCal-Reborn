@@ -5,7 +5,7 @@ export interface Candidate {
   node: LayoutNode; type: ResolvedNode['type']; width: number;
   minHeight: number; preferredHeight: number; maxHeight: number;
   children: Candidate[]; cost: number; deviation: number; area: number; count: number;
-  signature: string; variant?: string;
+  signature: string; variant?: string; fontScale?: number;
 }
 
 /** Final placement changes blank space only, never the selected content or topology. */
@@ -15,6 +15,7 @@ export function place(candidate: Candidate, box: Box, inherited: TextAlignment =
   const contentBox = { x: box.x + left, y: box.y + top, width: box.width - left - right, height: box.height - top - bottom };
   const textAlign = node.props.textAlign ?? inherited;
   const result: ResolvedNode = { type: candidate.type, id: node.id, name: node.name, box, contentBox, textAlign, children: [] };
+  if (candidate.fontScale !== undefined) result.fontScale = candidate.fontScale;
   if (candidate.variant !== undefined) result.variant = candidate.variant;
   if (!candidate.children.length) return result;
   const row = candidate.type === 'row';

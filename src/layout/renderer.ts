@@ -28,7 +28,8 @@ export function renderLayout(widget: ListWidget, tree: ResolvedNode, items: Prep
     spacer(middle, content.y - box.y);
     const body = frame(middle, content.width, content.height, node.type === 'row');
     if (node.type === 'item') {
-      const item = items.get(node.id);
+      const original = items.get(node.id);
+      const item = node.fontScale === undefined ? original : original?.atFontScale?.(node.fontScale);
       if (!item || !node.variant) throw new Error(`Missing prepared item or variant: ${node.id}`);
       item.render(body, { id: node.id, variant: node.variant, width: content.width, height: content.height, textAlign: node.textAlign });
     } else {

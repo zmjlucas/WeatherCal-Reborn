@@ -1,5 +1,6 @@
 import type { Diagnostic, ItemVariant, LayoutNode, Measurement, PlanResult, PlanningLimits, PreparedItems, ResolvedNode, Viewport } from './types';
-import { structures } from './candidates';
+import { structures, uniqueStructures } from './candidates';
+import { presets } from './presets';
 import { distribute, epsilon, mainGrow, paddingOf } from './geometry';
 import type { Range } from './geometry';
 import { place } from './placement';
@@ -9,6 +10,12 @@ import type { Candidate } from './placement';
 export function planLayout(root: LayoutNode, viewport: Viewport, items: PreparedItems, overrides: Partial<PlanningLimits> = {}): PlanResult {
   const limits = { maxCandidates: 256, maxMeasurements: 4096, frontier: 24, ...overrides };
   let measurements = 0, candidates = 0, truncated = false, estimated = viewport.confidence === 'estimated';
+  let activeItems = items;
+  let mode: 'manual' | 'presets' | 'search' = 'manual', fontScale = 1, hardLimited = false;
+  let remainingPhases = 1, hasAutomatic = false;
+  const phaseLimits = new Map<string, number>();
+  const phaseCounts = new Map<string, number>();
+  const adaptable = new Set<string>();
   const measured = new Map<string, Measurement>();
   const solved = new Map<string, Candidate[]>();
   const counts = new Map<string, number>();
@@ -23,7 +30,7 @@ export function planLayout(root: LayoutNode, viewport: Viewport, items: Prepared
     throw stop;
   }
   function variants(node: LayoutNode): readonly ItemVariant[] {
-    const prepared = items.get(node.id);
+    const prepared = activeItems.get(node.id);
     if (!prepared || !Array.isArray(prepared.variants) || !prepared.variants.length) fail('ITEM_CONTRACT_INVALID', `No prepared variants for ${node.name}.`, node);
     const ids = new Set<string>();
     for (const v of prepared.variants) {
@@ -39,10 +46,10 @@ export function planLayout(root: LayoutNode, viewport: Viewport, items: Prepared
     return result;
   }
   function measure(node: LayoutNode, variant: ItemVariant, width: number): Measurement | undefined {
-    const key = `${node.id}:${variant.id}:${width}`;
+    const key = `${node.id}:${variant.id}:${width}:${adaptable.has(node.id) ? fontScale : 1}`;
     const cached = measured.get(key);
     if (cached) return cached;
-    if (measurements >= limits.maxMeasurements) { truncated = true; return; }
+    if (measurements >= limits.maxMeasurements) { hardLimited = truncated = true; return; }
     measurements++;
     let value: Measurement;
     try { value = variant.measure(width); }
@@ -132,7 +139,8 @@ export function planLayout(root: LayoutNode, viewport: Viewport, items: Prepared
     const [top, right, bottom, left] = paddingOf(node);
     const inner = width - left - right;
     const base: Candidate = { node, type: 'item', width, minHeight: 0, preferredHeight: 0, maxHeight: Infinity,
-      children: [], cost: 0, deviation: 0, area: 0, count: 1, signature: node.id };
+      children: [], cost: 0, deviation: 0, area: 0, count: 1, signature: node.id,
+      ...(fontScale < 1 && adaptable.has(node.id) ? {fontScale} : {}) };
     let result: Candidate[] = [];
     if (node.type === 'item') {
       if (inner <= 0) return [];
@@ -150,15 +158,29 @@ export function planLayout(root: LayoutNode, viewport: Viewport, items: Prepared
       const c = finish(node, { ...base, type: 'space', minHeight: length ?? 0, preferredHeight: length ?? 0, maxHeight: length ?? Infinity });
       if (c) result.push(c);
     } else if (node.type === 'auto' || node.type === 'flow') {
-      for (const structure of structures(node, n => widthRange(n).min, n => {
+      const areas = new Map(node.children.map(n => {
         const range = widthRange(n);
         const preferredWidth = Math.min(range.max, range.preferred);
         const preferred = [...solve(n, preferredWidth)].sort((a, b) => a.cost - b.cost || a.deviation - b.deviation ||
           a.preferredHeight - b.preferredHeight || a.signature.localeCompare(b.signature))[0];
-        return preferred ? Math.min(Number.MAX_VALUE, preferredWidth * preferred.preferredHeight) : 0;
-      })) {
+        return [n.id, preferred ? Math.min(Number.MAX_VALUE, preferredWidth * preferred.preferredHeight) : 0] as const;
+      }));
+      const family = viewport.family ?? (viewport.width > viewport.height * 1.5 ? 'medium' : viewport.width <= 200 ? 'small' : 'large');
+      const preferred = presets(node, family);
+      const proposed = mode === 'presets' ? preferred
+        : uniqueStructures(preferred, structures(node, n => widthRange(n).min, n => areas.get(n.id) ?? 0));
+      for (const structure of proposed) {
         const count = counts.get(node.id) ?? 0;
-        if (count >= limits.maxCandidates) { truncated = true; break; }
+        if (count >= limits.maxCandidates) { hardLimited = truncated = true; break; }
+        const phaseCount = phaseCounts.get(node.id) ?? 0;
+        // Preserve a substantial original-font search regardless of adapter
+        // availability. Later stages share whatever earlier stages did not use.
+        const phaseLimit = phaseLimits.get(node.id) ?? Math.max(1, fontScale === 1
+          ? mode === 'presets' ? Math.min(32, Math.ceil(limits.maxCandidates / 8)) : Math.ceil(limits.maxCandidates / 2)
+          : Math.ceil((limits.maxCandidates - count) / remainingPhases));
+        phaseLimits.set(node.id, phaseLimit);
+        if (phaseCount >= phaseLimit) { truncated = true; break; }
+        phaseCounts.set(node.id, phaseCount + 1);
         counts.set(node.id, count + 1); candidates++;
         for (const c of solve(structure, width)) result.push({ ...c, node });
       }
@@ -245,10 +267,10 @@ export function planLayout(root: LayoutNode, viewport: Viewport, items: Prepared
   try {
     if (![viewport.width, viewport.height].every(n => Number.isFinite(n) && n > 0)) fail('VIEWPORT_UNKNOWN', 'A positive finite viewport is required.');
     if (!Object.values(limits).every(n => Number.isInteger(n) && n > 0)) fail('INVALID_LIMITS', 'Planning budgets must be positive integers.');
-    const pending: { node: LayoutNode; parent?: LayoutNode; depth: number }[] = [{ node: root, depth: 1 }];
+    const pending: { node: LayoutNode; parent?: LayoutNode; depth: number; automaticScope?: boolean }[] = [{ node: root, depth: 1 }];
     const ids = new Set<string>();
     while (pending.length) {
-      const { node, parent, depth } = pending.pop()!;
+      const { node, parent, depth, automaticScope } = pending.pop()!;
       if (!node || typeof node !== 'object' || typeof node.id !== 'string' || !node.id || typeof node.name !== 'string' ||
           !['row', 'column', 'auto', 'flow', 'item', 'space'].includes(node.type) || !Array.isArray(node.children) ||
           !node.props || typeof node.props !== 'object' || Array.isArray(node.props)) {
@@ -258,6 +280,8 @@ export function planLayout(root: LayoutNode, viewport: Viewport, items: Prepared
       ids.add(node.id);
       if (depth > 12 || ids.size > 128) fail('INVALID_LAYOUT', 'Use at most 128 nodes and 12 layout levels.', node);
       const automatic = node.type === 'auto' || node.type === 'flow';
+      hasAutomatic ||= automatic;
+      if (node.type === 'item' && automaticScope && items.get(node.id)?.atFontScale) adaptable.add(node.id);
       if ((automatic && (!node.children.length || node.children.length > 12)) ||
           ((node.type === 'item' || node.type === 'space') && node.children.length)) {
         fail('INVALID_LAYOUT', 'Automatic containers need 1–12 children; items and spaces cannot contain children.', node);
@@ -279,24 +303,50 @@ export function planLayout(root: LayoutNode, viewport: Viewport, items: Prepared
         }
         spaceAxes.set(node.id, parent.type);
       }
-      for (let i = node.children.length - 1; i >= 0; i--) pending.push({ node: node.children[i]!, parent: node, depth: depth + 1 });
+      for (let i = node.children.length - 1; i >= 0; i--) pending.push({ node: node.children[i]!, parent: node, depth: depth + 1, automaticScope: automaticScope || automatic });
     }
     if ((root.props.width !== undefined && root.props.width !== viewport.width) || (root.props.height !== undefined && root.props.height !== viewport.height)) {
       fail('CONSTRAINT_CONFLICT', 'The root frame must match the viewport.');
     }
-    const choices = solve(root, viewport.width)
-      .filter(c => c.minHeight <= viewport.height + epsilon && c.maxHeight >= viewport.height - epsilon)
-      .map(candidate => {
-        const tree = place(candidate, { x: 0, y: 0, width: viewport.width, height: viewport.height });
-        return { candidate, tree, deviation: candidate.deviation + heightDeviation(candidate, tree) };
-      });
-    choices.sort((a, b) => a.candidate.cost - b.candidate.cost || a.deviation - b.deviation || b.candidate.area - a.candidate.area ||
-      a.candidate.count - b.candidate.count || a.candidate.signature.localeCompare(b.candidate.signature));
-    const selected = choices[0];
-    if (!selected) fail(truncated ? 'SEARCH_LIMIT_REACHED' : 'NO_CANDIDATE_FITS', truncated ? 'Search budget reached before finding a complete layout.' : 'No supported candidate fits all selected content.');
-    if (truncated) diagnostics.push({ code: 'SEARCH_TRUNCATED', message: 'Selected the best complete layout found within the search budget.' });
-    return { ok: true, tree: selected.tree, diagnostics,
-      confidence: estimated ? 'estimated' : 'calibrated', measurements, candidates };
+    const scales = adaptable.size ? [1, 0.9, 0.8, 0.7] : [1];
+    const modes = hasAutomatic ? ['presets', 'search'] as const : ['manual'] as const;
+    let phaseIndex = 0;
+    for (const scale of scales) {
+      fontScale = scale;
+      if (scale < 1) {
+        const scaled = new Map(items);
+        for (const id of adaptable) {
+          let item;
+          try { item = items.get(id)!.atFontScale!(scale); }
+          catch { fail('ITEM_CONTRACT_INVALID', `Font adaptation failed for ${id}.`); }
+          if (!item || typeof item.render !== 'function') fail('ITEM_CONTRACT_INVALID', `Font adaptation returned an invalid item for ${id}.`);
+          scaled.set(id, item);
+        }
+        activeItems = scaled;
+      }
+      for (const strategy of modes) {
+        mode = strategy;
+        remainingPhases = scales.length * modes.length - phaseIndex++;
+        phaseCounts.clear(); phaseLimits.clear(); solved.clear();
+        const choices = solve(root, viewport.width)
+          .filter(c => c.minHeight <= viewport.height + epsilon && c.maxHeight >= viewport.height - epsilon)
+          .map(candidate => {
+            const tree = place(candidate, { x: 0, y: 0, width: viewport.width, height: viewport.height });
+            return { candidate, tree, deviation: candidate.deviation + heightDeviation(candidate, tree) };
+          });
+        choices.sort((a, b) => a.candidate.cost - b.candidate.cost || a.deviation - b.deviation || b.candidate.area - a.candidate.area ||
+          a.candidate.count - b.candidate.count || a.candidate.signature.localeCompare(b.candidate.signature));
+        const selected = choices[0];
+        if (!selected) continue;
+        if (truncated) diagnostics.push({ code: 'SEARCH_TRUNCATED', message: 'Selected a complete layout from a bounded candidate frontier.' });
+        if (scale < 1) diagnostics.push({code:'FONT_ADAPTED', message:`Automatic content uses ${Math.round(scale * 100)}% font sizes, with a 10pt lower bound for larger text.`});
+        return { ok: true, tree: selected.tree, diagnostics,
+          confidence: estimated ? 'estimated' : 'calibrated', measurements, candidates, strategy, fontScale: scale };
+      }
+    }
+    fail(hardLimited ? 'SEARCH_LIMIT_REACHED' : 'NO_CANDIDATE_FITS', hardLimited
+      ? 'Search budget reached before finding a complete layout.'
+      : 'No preset or searched layout fits all selected content at readable sizes. Reduce content, padding or gaps, or use a larger widget.');
   } catch (error) {
     if (error !== stop) throw error;
     return { ok: false, diagnostics, measurements, candidates };

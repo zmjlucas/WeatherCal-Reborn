@@ -253,6 +253,7 @@ test.each([false, true])('preferred area ordering finds tall and short rows whil
     : [[id, item(50, heights[index]!)]] as const));
   const result = planLayout(node('auto', 'root', children, { gap: 0 }), viewport(150, 110), items);
   assert(result.ok, JSON.stringify(result.diagnostics));
+  assert.equal(result.strategy, 'search');
   assert.deepEqual(result.tree.children.map(row => row.children.map(child => child.id)), [['a', 'c', 'e'], ['b', 'd', 'f']]);
   assert.deepEqual(result.tree.children.map(row => row.box.height), [100, 10]);
   if (grouped) assert.deepEqual(leaves(result.tree.children[0]!.children[0]!), ['a1', 'a2']);
@@ -326,4 +327,74 @@ test('variant-specific caps cannot override an explicit width or the root viewpo
     const result = planLayout(root, viewport(100, 40), new Map([['a', prepared]]));
     assert.equal(result.ok, false);
   }
+});
+
+test('small presets fit a full-height side item beside a vertical pair', () => {
+  const root = node('auto', 'root', ['a','b','c'].map(id => node('item', id)));
+  const items = new Map([['a',item(80,80)],['b',item(40,30)],['c',item(40,30)]]);
+  const result = planLayout(root, {...viewport(128,80),family:'small'}, items);
+  assert(result.ok, JSON.stringify(result.diagnostics));
+  assert.equal(result.strategy, 'presets');
+  assert.equal(result.fontScale, 1);
+  assert.deepEqual(leaves(result.tree).sort(), ['a','b','c']);
+  assert.equal(result.tree.type, 'row');
+});
+
+test('font fallback adapts nested automatic content while leaving manual siblings and pinned variants intact', () => {
+  function adaptive(scale = 1): PreparedItem { return {...item(20, 140 * scale), atFontScale: adaptive}; }
+  const manual = {...item(20,20), atFontScale() { throw Error('Manual content must not resize'); }};
+  const root = node('column','root',[
+    node('item','title',[],{height:20}),
+    node('auto','auto',[node('item','body',[],{variant:'normal'})]),
+  ]);
+  const result = planLayout(root, viewport(100,130), new Map([['title',manual],['body',adaptive()]]));
+  assert(result.ok, JSON.stringify(result.diagnostics));
+  assert.equal(result.tree.children[0]!.fontScale, undefined);
+  assert.equal(result.tree.children[0]!.box.height,20);
+  const body = result.tree.children[1]!.children[0]!;
+  assert.equal(body.variant, 'normal');
+  assert(body.fontScale! < 1 && body.fontScale! >= 0.7);
+  assert(body.box.height >= 140 * body.fontScale!);
+});
+
+test('font retry stages share hard measurement and candidate budgets', () => {
+  let calls = 0;
+  function adaptive(scale = 1): PreparedItem {
+    const prepared = item(20, 300 * scale);
+    const measure = prepared.variants[0]!.measure;
+    return {...prepared, variants:[{...prepared.variants[0]!, measure(width) {calls++; return measure(width);}}],atFontScale:adaptive};
+  }
+  const root = node('auto','root',[node('item','a'),node('item','b')]);
+  const result = planLayout(root, viewport(100,60), new Map([['a',adaptive()],['b',adaptive()]]), {maxMeasurements:4,maxCandidates:6});
+  assert.equal(result.ok, false);
+  assert.equal(result.measurements,calls);
+  assert(calls <= 4); assert(result.candidates <= 6);
+  assert(result.diagnostics.some(d=>d.code === 'SEARCH_LIMIT_REACHED'));
+});
+
+test.each([false,true])('font adapters do not starve an existing original-size area-order solution: shrink=%s', shrink => {
+  const heights = [100,10,100,10,100,10];
+  const children = heights.map((_,index)=>node('item',String(index)));
+  const items = new Map(children.map((child,index)=> {
+    function adaptive(scale=1): PreparedItem {
+      return {...item(50,heights[index]! * (shrink ? scale : 1)), atFontScale:adaptive};
+    }
+    return [child.id,adaptive()];
+  }));
+  const result = planLayout(node('auto','root',children,{gap:0}),viewport(150,110),items);
+  assert(result.ok,JSON.stringify(result));
+  assert.equal(result.fontScale,1);
+  assert.equal(result.strategy,'search');
+  assert.deepEqual(leaves(result.tree),['0','2','4','1','3','5']);
+});
+
+test('a searched plan retains a side preset needed by another automatic region', () => {
+  const upper = node('auto','upper',['a','b','c'].map(id=>node('item',id)),{height:80});
+  const heights = [100,10,100,10,100,10];
+  const lower = node('auto','lower',heights.map((_,i)=>node('item',String(i))),{gap:0,height:110});
+  const items = new Map([['a',item(80,80)],['b',item(40,30)],['c',item(40,30)],...heights.map((height,i)=>[String(i),item(50,height)] as const)]);
+  const result = planLayout(node('column','root',[upper,lower],{gap:0}),viewport(150,190),items);
+  assert(result.ok,JSON.stringify(result));
+  assert.equal(result.tree.children[0]!.type,'row');
+  assert.deepEqual(leaves(result.tree.children[1]!),['0','2','4','1','3','5']);
 });

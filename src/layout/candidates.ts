@@ -50,3 +50,15 @@ export function* structures(node: LayoutNode, widthHint: (node: LayoutNode) => n
     }
   }
 }
+
+/** Equivalent slicing trees must not consume repeated frontier or search slots. */
+export function* uniqueStructures(...inputs: Iterable<LayoutNode>[]): Generator<LayoutNode> {
+  const seen = new Set<string>();
+  function key(node: LayoutNode): string {
+    return node.name.startsWith('$') ? `${node.type}(${node.children.map(key).join(',')})` : node.id;
+  }
+  for (const input of inputs) for (const node of input) {
+    const signature = key(node);
+    if (!seen.has(signature)) { seen.add(signature); yield node; }
+  }
+}

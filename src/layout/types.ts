@@ -19,7 +19,8 @@ export interface LayoutNode {
   parameter?: string; length?: number;
 }
 export interface Diagnostic { code: string; message: string; nodeId?: string; source?: SourceLocation }
-export interface Viewport { width: number; height: number; confidence: 'calibrated' | 'estimated'; source: string }
+export type WidgetFamily = 'small' | 'medium' | 'large';
+export interface Viewport { family?: WidgetFamily; width: number; height: number; confidence: 'calibrated' | 'estimated'; source: string }
 export interface Measurement { requiredHeight: number; preferredHeight: number; confidence: 'calibrated' | 'estimated' }
 export interface ItemVariant {
   id: string; minWidth: number; preferredWidth: number; maxWidth?: number;
@@ -29,6 +30,8 @@ export interface ItemPlacement { id: string; variant: string; width: number; hei
 export interface PreparedItem {
   state: 'ready' | 'empty' | 'error'; variants: readonly ItemVariant[];
   effects: { refreshAfterDate?: Date };
+  /** Pure snapshot adaptation; never loads data or creates native views. */
+  atFontScale?(scale: number): PreparedItem;
   render(container: WidgetStack, placement: ItemPlacement): void;
 }
 export interface PrepareContext {
@@ -44,7 +47,7 @@ export interface Box { x: number; y: number; width: number; height: number }
 export interface ResolvedNode {
   type: 'row' | 'column' | 'item' | 'space'; id: string; name: string;
   box: Box; contentBox: Box; children: ResolvedNode[];
-  textAlign: TextAlignment; variant?: string;
+  textAlign: TextAlignment; variant?: string; fontScale?: number;
 }
 export interface PlanningLimits {
   /** Structural attempts per automatic instance, summed across proposed widths. */
@@ -56,6 +59,7 @@ export interface PlanningLimits {
 export type PlanResult = {
   ok: true; tree: ResolvedNode; diagnostics: Diagnostic[];
   confidence: 'calibrated' | 'estimated'; measurements: number; candidates: number;
+  strategy: 'manual' | 'presets' | 'search'; fontScale: number;
 } | { ok: false; diagnostics: Diagnostic[]; measurements: number; candidates: number };
 export interface WidgetLayoutOptions {
   family?: 'small' | 'medium' | 'large';

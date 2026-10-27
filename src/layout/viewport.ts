@@ -26,7 +26,7 @@ export function resolveViewport(configured: ConfiguredViewports, options: Widget
       const profile = screenProfiles[key];
       if (profile) {
         const [widgetWidth, widgetHeight] = profile.sizes[family === 'small' ? 0 : family === 'medium' ? 1 : 2];
-        return {width:widgetWidth, height:widgetHeight, confidence:'estimated', source:`auto:${profile.source}:${key}:${family}`};
+        return {family, width:widgetWidth, height:widgetHeight, confidence:'estimated', source:`auto:${profile.source}:${key}:${family}`};
       }
       throw new LayoutError({code:'VIEWPORT_UNKNOWN', message:`No widget size profile for ${width} x ${height} pt. Set the ${family} viewport override to width x height in Overall settings.`});
     }
@@ -38,5 +38,5 @@ export function resolveViewport(configured: ConfiguredViewports, options: Widget
   if (![width, height].every(n => Number.isFinite(n) && n > 0)) {
     throw new LayoutError({ code: 'VIEWPORT_INVALID', message: 'Viewport width and height must be finite positive numbers in logical points.' });
   }
-  return { width, height, confidence: 'estimated', source: options.viewport ? `explicit:${family}` : `preferences:${family}` };
+  return { family, width, height, confidence: 'estimated', source: options.viewport ? `explicit:${family}` : `preferences:${family}` };
 }
