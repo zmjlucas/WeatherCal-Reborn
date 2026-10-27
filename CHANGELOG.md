@@ -10,8 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - **Breaking:** Replaced line-based layout commands, ASCII layouts and settings-object input with one recursive `row`/`column`/`auto`/`flow` DSL. Automatic regions preserve every selected instance; `auto` may reorder direct children and `flow` preserves their reading order. Existing user regions require manual migration.
 - **Breaking:** Custom items now register under `custom.items` and return prepared variants, measurements and synchronous rendering. Removed opaque item callbacks, shared layout/alignment state and empty event/reminder callback dispatch. Custom backgrounds set styles only.
-- **Breaking:** Small, medium and large layouts require explicit per-family viewport dimensions or a programmatic override. Unknown viewports produce a diagnostic widget. Root padding moves to the layout DSL; the old `widgetPadding` preference is removed.
-- Built-in content now uses prepared snapshots, shared data requests and field-preserving orientation variants. Empty/error content remains visible, rain includes its update/source line and refresh request, and explicitly selected sun events remain visible outside the old time window.
+- **Breaking:** Root padding moves to the layout DSL; the old `widgetPadding` preference is removed. Unknown viewports produce a diagnostic widget with manual override instructions.
+- Built-in content now uses prepared snapshots, shared data requests and field-preserving orientation variants. Empty/error content remains visible, rain displays QWeather's summary with a source link, and explicitly selected sun events remain visible outside the old time window.
 - Removed obsolete orientation, sun-window/automatic-event and empty-item dispatch preference controls. Set item orientation with the layout's `variant` property; empty calendar/reminder items use their localized message.
 - Releases upload only `WeatherCal-Reborn-v<version>.js`, alongside GitHub's automatic source ZIP and tar.gz archives. Local builds and CI artifacts still include the converter and checksums.
 - Update and reset discover the versioned script through the latest stable GitHub release metadata. Older installations using the fixed `one.js` URL require one manual upgrade.
@@ -19,7 +19,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 
 - Bounded, deterministic layout planning with width-dependent height estimates, fixed/min/max dimensions, local alignment, explicit gaps/padding and complete-plan diagnostics.
-- Layout syntax, custom-module and viewport-calibration documentation. Automated geometry tests do not replace device validation; no calibrated phone-size table is shipped.
+- Automatic viewport detection for small, medium and large widgets using sourced screen-size profiles. Blank or `auto` settings select detection; manual per-family and programmatic dimensions take priority. Home-screen runs and app previews use their own selected family. Profiles assume standard icons; unknown screens require a manual override.
+- Layout syntax, custom-module and viewport-calibration documentation. Automated geometry tests and reference size tables do not replace device validation.
 
 ## [0.1.0] - 2026-10-26
 

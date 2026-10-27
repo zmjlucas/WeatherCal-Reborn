@@ -10,19 +10,35 @@ input. Existing installations must rewrite their layout and custom items before
 using this engine. Updates preserve the user region; they do not translate its
 old syntax.
 
-## Configure the viewport first
+## Automatic viewport detection
 
-The engine supports home-screen `small`, `medium` and `large` families. Set the
-corresponding `widget.smallViewport`, `widget.mediumViewport` or
-`widget.largeViewport` preference in Overall settings to `width x height`, in
-logical points. Each value describes the available ListWidget area with native
-padding set to zero. These preferences start blank.
+The engine supports home-screen `small`, `medium` and `large` families. Viewport
+preferences in Overall settings default to blank, which enables automatic
+detection. Entering `auto` has the same effect (case and surrounding whitespace
+are ignored). The engine reads [Device.screenSize()](https://docs.scriptable.app/device/#screensize),
+normalizes portrait/landscape orientation, and matches the screen's logical point
+dimensions to a built-in widget-size profile for the selected family. It does
+not use screen pixels or the full screen as the widget viewport.
 
-There is no built-in table of verified phone dimensions. An unset viewport
-produces a `VIEWPORT_UNKNOWN` diagnostic widget; malformed dimensions produce
-`VIEWPORT_INVALID`. A screen's point or
-pixel dimensions cannot substitute for its widget's dimensions. A programmatic
-caller can supply an explicit viewport instead of using the saved preference:
+The profiles use [Apple's widget size tables](https://developer.apple.com/design/human-interface-guidelines/widgets)
+and the author's [iPhone 16 Pro/Pro Max measurements](https://gist.github.com/mzeryck/3a97ccd1e059b3afa3c6666d27a496c9).
+iPad profiles use Apple's **Canvas** dimensions, rather than the scaled Device
+presentation dimensions. These are reference estimates for standard home-screen
+icons, not measurements of the current widget. Scriptable exposes no API to read
+the actual widget bounds or large-icon mode. OS changes, large icons and display
+zoom can therefore need a manual override; unlisted screens are not guessed.
+
+To override detection, set `widget.smallViewport`, `widget.mediumViewport` or
+`widget.largeViewport` to `width x height` in logical points. The value describes
+the full ListWidget area with native padding set to zero; layout padding is
+applied afterwards. Existing manual values stay in effect: clear them or enter
+`auto` to enable detection. Unknown screen profiles or an unavailable screen API
+produce `VIEWPORT_UNKNOWN` with instructions for overriding the selected family.
+Malformed manual dimensions produce `VIEWPORT_INVALID`.
+
+Resolution priority is: programmatic `options.viewport`, then a manual per-family
+preference, then automatic detection. Overrides do not need the device screen API.
+A programmatic caller can supply explicit dimensions:
 
 ```js
 const widget = await code.createWidget(layout, name, iCloudInUse, custom, {

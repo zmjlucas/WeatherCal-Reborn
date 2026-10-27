@@ -30,9 +30,9 @@ consecutive build identity, and the 500-line source module limit.
    separate preferences and backgrounds.
 4. Run it to choose a background, grant desired permissions, and optionally
    choose QWeather (default) or OpenWeather and configure its credentials.
-   Configure the selected family's viewport in Overall settings before previewing
-   content; blank dimensions produce a `VIEWPORT_UNKNOWN` diagnostic. See
-   [viewport setup and calibration](LAYOUT.md#configure-the-viewport-first).
+   Viewport size is detected automatically on known screens. Leave the viewport
+   overrides blank or enter `auto`; enter manual dimensions only when needed. See
+   [automatic viewport detection](LAYOUT.md#automatic-viewport-detection).
    Select that script in a Scriptable home-screen widget.
 5. Edit `layout` and `custom` between the `WeatherCal: user begin` and
    `WeatherCal: user end` comments. Keep all four boundary comments intact.
@@ -65,7 +65,8 @@ your current script and its custom code first. Manually install `one.js` under
 the **same Scriptable name** and storage location. Rewrite the old line-based or
 ASCII layout as one `row`/`column`/`auto`/`flow` tree, and adapt custom item
 functions to `custom.items` modules with measurements. Copy the adapted code
-into the new editable region and configure the target family viewport.
+into the new editable region. Viewport detection is automatic; clear previously
+saved dimensions to enable it, or keep them as manual overrides.
 Existing preference/background filenames and OpenWeather key files remain
 compatible. Weather now defaults to
 QWeather when no provider is stored: choose OpenWeather in Weather preferences
@@ -92,8 +93,9 @@ cache ages: a widget refresh only fetches data whose cache needs updating.
 layout string. Preferences are loaded separately; settings objects and ASCII
 layouts are no longer accepted. Optional `options.family` selects `small`,
 `medium` or `large` for a programmatic preview, and `options.viewport` supplies
-`{ width, height }` in logical points. The installed entry passes its selected
-preview family before planning.
+`{ width, height }` in logical points, overriding both preferences and detection.
+Without an override, the engine resolves dimensions from the device's screen
+profile. The installed entry passes its selected preview family before planning.
 
 Register each custom item as an `ItemModule` under `custom.items`. Its `prepare`
 method captures data and resources once, returns width-dependent size estimates,
@@ -150,8 +152,9 @@ part of testing, even when credentials have been supplied separately.
 
 After installing the widget and optional converter, verify these device-dependent paths before publishing:
 
-- Establish zero-padding viewport dimensions for each supported family, device,
-  OS and display-zoom setting; save them as `width x height` preferences.
+- Check automatic viewport dimensions for each supported family, device, OS,
+  icon-size and display-zoom setting. If needed, save measured zero-padding
+  dimensions as `width x height` overrides; also check blank and `auto` settings.
 - Small, medium and large previews plus home-screen rendering with manual,
   auto, flow and nested layouts. Check multiple automatic regions, long text,
   unavailable data, fixed dimensions and a deliberately overfull layout.
@@ -164,7 +167,7 @@ After installing the widget and optional converter, verify these device-dependen
 - iCloud hydration; update preserves script; reset preserves other widgets.
 
 The native layout measurements are estimates until these checks are recorded.
-The engine ships no calibrated device-size table. Follow the detailed
+The engine ships sourced reference sizes, not device-validated measurements. Follow the detailed
 [calibration procedure](LAYOUT.md#device-calibration) and retain the device,
 family and configuration with the results.
 

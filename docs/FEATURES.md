@@ -9,7 +9,7 @@ Upstream reference: the project linked in the [README credits](../README.md#cred
 | Solid, automatic/custom gradient, light/dark Photos images, custom backgrounds | `src/widget.ts`, `src/core/gradient.ts`, `src/setup/backgrounds.ts` | layout/setup/distribution tests |
 | Recursive row/column/auto/flow DSL, fixed/min/max dimensions, scoped alignment, fixed/flexible spaces | `src/layout/parser.ts`, `geometry.ts`, `placement.ts` | parser and planner tests |
 | Bounded candidate planning, ordered flow, movable auto children, complete plans and failure diagnostics | `src/layout/planner.ts`, `candidates.ts` | planner tests |
-| Explicit family viewports and plan-to-native-stack rendering | `src/layout/viewport.ts`, `renderer.ts` | viewport and renderer tests |
+| Automatic screen-profile viewports, manual overrides and plan-to-native-stack rendering | `src/layout/viewport.ts`, `device-profiles.ts`, `renderer.ts` | viewport, renderer and standalone tests |
 | Prepared built-in/custom modules, shared data loading, width-dependent estimated text geometry and presentation variants | `src/items/registry.ts`, `presentation/`, `src/layout/data-session.ts` | prepared-item tests |
 | Text/enum/bool/font/multi-value/multi-select editing; localization; default merging | `src/preferences/` | preference tests |
 | Date sizes, greetings, events, reminders, calendar/list colors, empty-state behavior, deep links | `src/items/calendar.ts`, `basic.ts`, `src/data/agenda.ts` | item and data tests |
@@ -38,9 +38,10 @@ See [layout syntax and migration](LAYOUT.md).
 
 The preference categories are widget, localization, font, date, events,
 reminders, weather and symbol. The weather provider preference defaults
-to QWeather. Per-family viewport preferences start blank and require verified
-dimensions or an explicit programmatic override. Root padding comes from the
-layout; `widget.padding` remains item-internal padding.
+to QWeather. Blank or `auto` per-family viewport preferences detect reference
+sizes from known screen profiles; manual dimensions and programmatic overrides
+take priority. Unlisted screens require an override. Root padding comes from
+the layout; `widget.padding` remains item-internal padding.
 
 ## Correctness changes
 
