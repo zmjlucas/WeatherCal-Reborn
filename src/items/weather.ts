@@ -2,7 +2,7 @@ import type { WeatherCalContext } from "../types/context";
 // Current and upcoming weather preserve the public helper context used by custom items.
 
 export default {
-  async current(this: WeatherCalContext, column: WidgetStack): Promise<void> {
+  async current(this: WeatherCalContext, column: WidgetStack, horizontal = false): Promise<void> {
     if (!this.data.weather) await this.setupWeather()
     const weatherData = this.data.weather
     if (!weatherData) throw new Error("Weather setup did not provide weather data.")
@@ -30,7 +30,7 @@ export default {
     mainConditionStack.setPadding(weatherSettings.showLocation ? 0 : this.padding, this.padding, 0, this.padding)
 
     const tempText = this.displayNumber(weatherData.currentTemp,"--") + "°"
-    if (weatherSettings.horizontalCondition) {
+    if (horizontal) {
       mainConditionStack.addSpacer(5)
       mainConditionStack.layoutHorizontally()
       mainConditionStack.centerAlignContent()
@@ -43,7 +43,7 @@ export default {
       conditionTextStack.setPadding(this.padding, this.padding, 0, this.padding)
     }
 
-    if (!weatherSettings.horizontalCondition) {
+    if (!horizontal) {
       const tempStack = this.align(currentWeatherStack)
       tempStack.setPadding(0, this.padding, 0, this.padding)
       this.provideText(tempText, tempStack, this.format.largeTemp)

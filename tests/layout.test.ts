@@ -1,91 +1,95 @@
-import type { WidgetContainer } from '#source/types/rendering';
-import { test } from 'vitest';
-import assert from 'node:assert/strict';
-import { installScriptable, texts, required, inspect, mockColor } from './helpers/scriptable';
+import { test, expect } from 'vitest';
+import { installScriptable, texts, inspect, mockColor } from './helpers/scriptable';
 import { createWeatherCal as create } from '#source/create';
+import type { ItemModule, WidgetLayoutOptions } from '#source/layout/types';
 
-test('text layouts preserve parenthesized parameters, fixed sizes, custom overrides and alignment', async t => {
+const options: WidgetLayoutOptions = {family: 'large', viewport:{width:320,height:340}};
+function label(value: string): ItemModule {
+  return { async prepare() { return { state:'ready', effects:{}, variants:[{id:'normal',minWidth:40,preferredWidth:80,adaptationCost:0,measure:()=>({requiredHeight:20,preferredHeight:20,confidence:'estimated'})}], render(stack) {stack.addText(value);} }; } };
+}
+
+test('semi-auto renders every prepared custom instance exactly once with local text alignment', async t => {
   installScriptable(t);
-  const code = create();
-  const widget = inspect(await code.createWidget('row(80)\ncolumn(90)\nright\ntext(Hello (world))\nspace(7)', 'A', false, {
-    text(column: WidgetContainer, value?: string | null) { code.provideText(value, column, null, true); }
-  }));
-  assert.deepEqual(texts(widget), ['Hello (world)']);
-  assert.equal(widget.children[0]!.size.height, 80);
-  const column = widget.children[0]!.children[0]!;
-  assert.equal(column.size.width, 90);
-  assert.equal(column.children[0]!.children[0]!.type, 'spacer');
-  assert.equal(column.children[1]!.length, 7);
+  const received: string[] = [];
+  const module = label('same');
+  const prepare = module.prepare;
+  let preparations = 0;
+  module.prepare = async (context, props) => {
+    preparations++;
+    const item = await prepare(context, props);
+    return {...item, render(stack, placement) { received.push(placement.id + ':' + placement.textAlign); item.render(stack,placement); }};
+  };
+  const widget = await create().createWidget('row(gap: 8)[column(width: 80, textAlign: "end")[value],auto[value,value]]', 'A', false, {items:{value:module}}, options);
+  expect(texts(widget)).toEqual(['same','same','same']);
+  expect(preparations).toBe(3);
+  expect(received).toEqual(['0.0.0:end','0.1.0:start','0.1.1:start']);
 });
 
-test('ASCII layouts flush the last row without a trailing separator', async t => {
-  installScriptable(t);
-  const code = create();
-  const widget = inspect(await code.createWidget('--------------------\n|first    |  90    |\n|         | second |', 'ASCII', false, {
-    first(column: WidgetContainer) { column.addText('first'); }, second(column: WidgetContainer) { column.addText('second'); }
-  }));
-  assert.deepEqual(texts(widget), ['first', 'second']);
-  assert.equal(widget.children[0]!.children[1]!.size.width, 90);
-});
-
-test('widget creation accepts legacy settings and does not leak paths, data or customization across runs', async t => {
+test('creation resets paths, prepared data and customization between runs', async t => {
   const env = installScriptable(t);
   const code = create();
-  code.initialize('Old', false);
-  const settings = await code.getSettings();
-  settings.layout = 'row\ncolumn\nvalue';
-  let first = true;
-  await code.createWidget(settings, 'Old', false, { value(column: WidgetContainer) { column.addText('old'); code.data.location = { locality: 'Old marker' }; } });
-  env.cloud.writeString('/library/weather-cal-New', JSON.stringify({ type: 'color', color: 'abc123' }));
-  const widget = inspect(await code.createWidget('row\ncolumn\nvalue', 'New', true, { value(column: WidgetContainer) { column.addText(code.data.location?.locality === 'Old marker' ? 'stale' : 'new'); first = false; } }));
-  assert.equal(first, false);
-  assert.deepEqual(texts(widget), ['new']);
-  assert.equal(code.fm, env.cloud);
-  assert.equal(code.prefPath, '/library/weather-cal-preferences-New');
-  assert.equal(widget.backgroundColor.hex, 'abc123');
+  await code.createWidget('value', 'Old', false, {items:{value:label('old')}}, options);
+  code.data.location = {locality:'Old marker'};
+  env.cloud.writeString('/library/weather-cal-New', '{"type":"color","color":"abc123"}');
+  const widget = inspect(await code.createWidget('text("new")', 'New', true, undefined, options));
+  expect(texts(widget)).toEqual(['new']);
+  expect(code.data.location).toBeUndefined();
+  expect(code.custom).toBeUndefined();
+  expect(code.fm).toBe(env.cloud);
+  expect(code.prefPath).toBe('/library/weather-cal-preferences-New');
+  expect(widget.backgroundColor.hex).toBe('abc123');
 });
 
-test('custom backgrounds work without a stored background and image backgrounds hydrate iCloud', async t => {
-  const env = installScriptable(t, { iCloud: true, dark: true });
+test('custom backgrounds and iCloud image backgrounds survive native layout', async t => {
+  const env = installScriptable(t, {iCloud:true,dark:true});
   const code = create();
-  const widget = inspect(await code.createWidget('row\ncolumn', 'Custom', true, { background(widget) { widget.backgroundColor = mockColor('ff0000'); } }));
-  assert.equal(widget.backgroundColor.hex, 'ff0000');
-  env.cloud.writeString('/library/weather-cal-Image', JSON.stringify({ type: 'image', dark: true }));
-  env.cloud.writeImage('/documents/Weather Cal/Image (Dark).jpg', { fixture: 'dark' });
-  const imageWidget = inspect(await code.createWidget('row\ncolumn', 'Image', true));
-  assert.deepEqual(imageWidget.backgroundImage, { fixture: 'dark' });
-  assert(env.downloads.includes('/documents/Weather Cal/Image (Dark).jpg'));
+  const widget = inspect(await code.createWidget('text("Custom")', 'Custom', true, {background(widget) {widget.backgroundColor = mockColor('ff0000');}}, options));
+  expect(widget.backgroundColor.hex).toBe('ff0000');
+  env.cloud.writeString('/library/weather-cal-Image', '{"type":"image","dark":true}');
+  env.cloud.writeImage('/documents/Weather Cal/Image (Dark).jpg', {fixture:'dark'});
+  const image = inspect(await code.createWidget('text("Image")', 'Image', true, undefined, options));
+  expect(image.backgroundImage).toEqual({fixture:'dark'});
+  expect(env.downloads).toContain('/documents/Weather Cal/Image (Dark).jpg');
 });
 
-test('automatic and custom gradients preserve day/night and color stop configuration', async t => {
+test('automatic and custom gradients retain their color stops', async t => {
   const env = installScriptable(t);
   const code = create();
-  env.local.writeString('/library/weather-cal-Gradient', JSON.stringify({ type: 'gradient', initialColor: '111111', finalColor: '222222' }));
-  const custom = inspect(await code.createWidget('row\ncolumn', 'Gradient', false));
-  assert.deepEqual(custom.backgroundGradient.colors.map(x => x.hex), ['111111', '222222']);
-  env.local.writeString('/library/weather-cal-Auto', '{"type":"auto"}');
-  code.setupGradient = async () => ({ color: () => [mockColor('000000'), mockColor('888888')], position: () => [0, 1] });
-  const automatic = inspect(await code.createWidget('row\ncolumn', 'Auto', false));
-  assert.deepEqual(automatic.backgroundGradient.locations, [0, 1]);
+  env.local.writeString('/library/weather-cal-Gradient', '{"type":"gradient","initialColor":"111111","finalColor":"222222"}');
+  const custom = inspect(await code.createWidget('text("Gradient")','Gradient',false,undefined,options));
+  expect(custom.backgroundGradient.colors.map(x=>x.hex)).toEqual(['111111','222222']);
+  env.local.writeString('/library/weather-cal-Auto','{"type":"auto"}');
+  code.setupGradient = async () => ({color:()=>[mockColor('000000'),mockColor('888888')],position:()=>[0,1]});
+  const automatic = inspect(await code.createWidget('text("Auto")','Auto',false,undefined,options));
+  expect(automatic.backgroundGradient.locations).toEqual([0,1]);
 });
 
-test('separate widget instances retain independent preferences, custom callbacks and data', async t => {
+test('layout diagnostics occur before data requests and no partial content is rendered on fit failure', async t => {
   const env = installScriptable(t);
-  const first = create();
-  const second = create();
-  env.local.writeString('/library/weather-cal-preferences-First', JSON.stringify({ localization: { morningGreeting: 'First' }, widget: { padding: 0, instantDark: false } }));
-  await first.createWidget('row\ncolumn\nvalue', 'First', false, {
-    value(column: WidgetContainer) { first.data.location = { locality: 'First instance' }; column.addText('First'); }
-  });
-  const result = await second.createWidget('row\ncolumn\nvalue', 'Second', true, {
-    value(column: WidgetContainer) { column.addText(second.data.location ? 'leaked' : 'Second'); }
-  });
-  assert.deepEqual(texts(result), ['Second']);
-  assert.equal(first.settings.localization.morningGreeting, 'First');
-  assert.equal(first.settings.widget.padding, 0);
-  assert.equal(first.settings.widget.instantDark, false);
-  assert.equal(first.fm, env.local);
-  assert.equal(second.fm, env.cloud);
-  assert.equal(required(first.data.location).locality, 'First instance');
-  assert.notEqual(first.custom, second.custom);
+  const code = create();
+  let prepared = 0;
+  const module = label('content');
+  const prepare = module.prepare;
+  module.prepare = async (...args) => {prepared++; return prepare(...args);};
+  const unknown = await code.createWidget('auto[value, typo]', 'Unknown', false, {items:{value:module}}, options);
+  expect(texts(unknown).join(' ')).toContain('UNKNOWN_ITEM');
+  expect(prepared).toBe(0);
+  expect(env.requests).toEqual([]);
+  const missing = await code.createWidget('current', 'Missing', false, undefined, {family:'large'});
+  expect(texts(missing).join(' ')).toContain('VIEWPORT_UNKNOWN');
+  expect(env.requests).toEqual([]);
+  const noFit = await code.createWidget('column[value,value]', 'Small', false, {items:{value:module}}, {family:'small',viewport:{width:50,height:25}});
+  expect(texts(noFit).join(' ')).toContain('NO_CANDIDATE_FITS');
+  expect(texts(noFit)).not.toContain('content');
+});
+
+test('automatic background and selected sun items share one data load per creation', async t => {
+  const env = installScriptable(t);
+  const code = create();
+  env.local.writeString('/library/weather-cal-Sun', '{"type":"auto"}');
+  let loads = 0;
+  code.setupSunrise = async function() { loads++; this.data.sun = {sunrise:0,sunset:1,tomorrow:2}; };
+  const widget = await code.createWidget('auto[sunrise,sunset]', 'Sun', false, undefined, options);
+  expect(texts(widget).join(' ')).not.toContain('LAYOUT_FAILED');
+  expect(loads).toBe(1);
 });

@@ -27,13 +27,22 @@ export default async function(this: WeatherCalContext, getFromCalendar: GetCalen
         padding: {
           val: "5",
           name: "Item padding",
-          description: "The padding around each item. This also determines the approximate widget padding. Default is 5.",
+          description: "Internal padding within each item. Set the outer margin with layout padding. Default is 5.",
         },
-        widgetPadding: {
-          val: { top: "", left: "", bottom: "", right: "" },
-          name: "Custom widget padding",
-          type: "multival",
-          description: "The padding around the entire widget. By default, these values are blank and Weather Cal uses the item padding to determine these values. Transparent widgets often look best with these values at 0.",
+        smallViewport: {
+          val: "",
+          name: "Small viewport",
+          description: "Measured zero-padding widget width x height in logical points. Required for small widgets; see docs/LAYOUT.md.",
+        },
+        mediumViewport: {
+          val: "",
+          name: "Medium viewport",
+          description: "Measured zero-padding widget width x height in logical points. Required for medium widgets; see docs/LAYOUT.md.",
+        },
+        largeViewport: {
+          val: "",
+          name: "Large viewport",
+          description: "Measured zero-padding widget width x height in logical points. Required for large widgets; see docs/LAYOUT.md.",
         },
         tintIcons: {
           val: this.enum.icons.never,

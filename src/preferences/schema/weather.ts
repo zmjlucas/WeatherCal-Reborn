@@ -25,11 +25,6 @@ export default async function(this: WeatherCalContext, getFromCalendar: GetCalen
           name: "Show location name",
           type: "bool",
         },
-        horizontalCondition: {
-          val: false,
-          name: "Display the condition and temperature horizontally",
-          type: "bool",
-        },
         showCondition: {
           val: false,
           name: "Show text value of the current condition",
@@ -54,11 +49,6 @@ export default async function(this: WeatherCalContext, getFromCalendar: GetCalen
           val: "0",
           name: "Spacing between daily or hourly forecast items",
         },
-        horizontalHours: {
-          val: false,
-          name: "Display the hourly forecast horizontally",
-          type: "bool",
-        },
         showHours: {
           val: "3",
           name: "Number of hours shown in the hourly forecast item",
@@ -66,11 +56,6 @@ export default async function(this: WeatherCalContext, getFromCalendar: GetCalen
         showHoursFormat: {
           val: "ha",
           name: "Date format for the hourly forecast item",
-        },
-        horizontalForecast: {
-          val: false,
-          name: "Display the daily forecast horizontally",
-          type: "bool",
         },
         showDays: {
           val: "3",

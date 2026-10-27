@@ -3,6 +3,12 @@ import type { FontFormat } from "../types/settings";
 import type { WeatherCalContext } from "../types/context";
 
 export default {
+  // Item-local content grouping; outer alignment belongs to the resolved layout.
+  align(column: WidgetContainer): WidgetStack {
+    const stack = column.addStack();
+    stack.layoutVertically();
+    return stack;
+  },
   displayNumber(this: WeatherCalContext, number: number | null | undefined, dummy = "-"): string { return (number == null ? dummy : Math.round(number).toString()) },
 
   tintIcon(this: WeatherCalContext, icon: WidgetImage, format?: ColorFormat | null, force = false): void {

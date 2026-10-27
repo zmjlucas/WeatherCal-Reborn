@@ -1,42 +1,24 @@
-import type { WeatherCalContext } from "../types/context";
-// Sun items consume sunrise, sunset, and tomorrow timestamps in milliseconds.
+import type { WeatherCalContext } from '../types/context';
+
+// The named item always selects its own event; after sunset, sunrise uses tomorrow.
+async function renderSun(context: WeatherCalContext, column: WidgetStack, sunset: boolean): Promise<void> {
+  if (!context.data.sun) await context.setupSunrise();
+  const sun = context.data.sun;
+  if (!sun) throw new Error('Sunrise setup did not provide sun data.');
+  const time = sunset ? sun.sunset : context.now.getTime() > (sun.sunset ?? Infinity) ? sun.tomorrow : sun.sunrise;
+  const stack = context.align(column);
+  stack.setPadding(context.padding / 2, context.padding, context.padding / 2, context.padding);
+  stack.layoutHorizontally();
+  stack.centerAlignContent();
+  stack.addSpacer(context.padding * 0.3);
+  const symbol = stack.addImage(SFSymbol.named(sunset ? 'sunset.fill' : 'sunrise.fill').image);
+  symbol.imageSize = new Size(22, 22);
+  context.tintIcon(symbol, context.format.sunrise);
+  stack.addSpacer(context.padding);
+  context.provideText(time == null ? '--' : context.formatTime(new Date(time)), stack, context.format.sunrise);
+}
 
 export default {
-  async sunrise(this: WeatherCalContext, column: WidgetStack, forceSunset = false): Promise<void> {
-    if (!this.data.sun) await this.setupSunrise()
-    const sun = this.data.sun
-    if (!sun) throw new Error("Sunrise setup did not provide sun data.")
-    const [sunrise, sunset, tomorrow, current, sunSettings] = [sun.sunrise, sun.sunset, sun.tomorrow, this.now.getTime(), this.settings.sunrise]
-
-    const showWithin = parseInt(String(sunSettings.showWithin))
-    if (showWithin > 0 && !(Math.abs(this.now.getTime() - (sunrise ?? 0)) / 60000 <= showWithin) && !(Math.abs(this.now.getTime() - (sunset ?? 0)) / 60000 <= showWithin)) { return }
-
-    let timeToShow, symbolName
-    const showSunset = current > (sunrise ?? 0) + 30*60*1000 && current < (sunset ?? 0) + 30*60*1000
-
-    if (sunSettings.separateElements ? forceSunset : showSunset) {
-      symbolName = "sunset.fill"
-      timeToShow = sunset
-    } else {
-      symbolName = "sunrise.fill"
-      timeToShow = current > (sunset ?? 0) ? tomorrow : sunrise
-    }
-
-    const sunriseStack = this.align(column)
-    sunriseStack.setPadding(this.padding/2, this.padding, this.padding/2, this.padding)
-    sunriseStack.layoutHorizontally()
-    sunriseStack.centerAlignContent()
-
-    sunriseStack.addSpacer(this.padding * 0.3)
-
-    const sunSymbol = sunriseStack.addImage(SFSymbol.named(symbolName).image)
-    sunSymbol.imageSize = new Size(22,22)
-    this.tintIcon(sunSymbol, this.format.sunrise) // TODO: Maybe function-ize this too?
-
-    sunriseStack.addSpacer(this.padding)
-
-    const time = this.provideText(timeToShow == null ? "--" : this.formatTime(new Date(timeToShow)), sunriseStack, this.format.sunrise)
-  },
-
-  async sunset(this: WeatherCalContext, column: WidgetStack): Promise<void> { return await this.sunrise(column, true) }
+  async sunrise(this: WeatherCalContext, column: WidgetStack): Promise<void> { await renderSun(this, column, false); },
+  async sunset(this: WeatherCalContext, column: WidgetStack): Promise<void> { await renderSun(this, column, true); },
 };

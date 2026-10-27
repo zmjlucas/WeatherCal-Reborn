@@ -91,10 +91,10 @@ test('rain item reports unavailable and requires QWeather rather than inventing 
 
 test('rain is available through real layouts and layouts without it make no minutely requests', async t => {
   const { service, requests } = await renderContext(t);
-  const plain = await service.createWidget('row\ncolumn\ntext(Hello)', service.name, false);
+  const plain = await service.createWidget('text("Hello")', service.name, false, undefined, {family:'large',viewport:{width:320,height:340}});
   assert.deepEqual(texts(plain), ['Hello']);
   assert.equal(requests.length, 0);
-  const widget = await service.createWidget('row\ncolumn\nrain', service.name, false);
+  const widget = await service.createWidget('rain', service.name, false, undefined, {family:'large',viewport:{width:320,height:340}});
   assert.deepEqual(texts(widget), ['Rain expected around 12:20', 'Updated 12:00 · QWeather']);
   assert.equal(requests.length, 1);
 });

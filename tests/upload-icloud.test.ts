@@ -97,11 +97,11 @@ macTest('native inspect and probe leave the installed script and directory conte
 
 test('merged widget retains its identity, preferences, image backgrounds and credentials', async () => {
   const artifacts = await buildArtifacts();
-  const current = scriptFixture('const layout = `row\ncolumn\nidentity`; const custom = { identity(column) { column.addText(Script.name()); } };');
+  const current = scriptFixture('const layout = `column(padding: [10,15,10,15])[identity]`; const custom = { items: { identity: { async prepare() { return { state: "ready", effects: {}, variants: [{ id: "normal", minWidth: 100, preferredWidth: 150, adaptationCost: 0, measure() { return { requiredHeight: 20, preferredHeight: 20, confidence: "estimated" }; } }], render(stack) { stack.addText(Script.name()); } }; } } } };');
   const merged = prepareUpload(current, artifacts['one.js']);
   for (const dark of [false, true]) {
     const env = createEnvironment({ iCloud: true, name: 'WeatherCal-Test', dark });
-    env.cloud.writeString('/library/weather-cal-preferences-WeatherCal-Test', '{"widget":{"padding":0,"instantDark":false}}');
+    env.cloud.writeString('/library/weather-cal-preferences-WeatherCal-Test', '{"widget":{"padding":0,"instantDark":false,"largeViewport":"320 x 340"}}');
     env.cloud.writeString('/library/weather-cal-WeatherCal-Test', '{"type":"image","dark":true}');
     env.cloud.writeString('/library/weather-cal-api-key', 'stored-key');
     env.cloud.writeImage('/documents/Weather Cal/WeatherCal-Test.jpg', { pixels: 'light' });
@@ -109,11 +109,12 @@ test('merged widget retains its identity, preferences, image backgrounds and cre
     env.secrets.set('weather-cal-qweather-host:WeatherCal-Test', 'stored-host');
     const before = new Map(env.cloud.store);
     await vm.runInNewContext('(async () => {\n' + merged + '\n})()', {
-      ...env.globals, Date, module: { filename: '/documents/WeatherCal-Test.js' }
+      ...env.globals, config: {...env.globals.config, widgetFamily: 'large'}, Date, module: { filename: '/documents/WeatherCal-Test.js' }
     });
     const widget = required(env.globals.Script.widget);
     assert.deepEqual(texts(widget), ['WeatherCal-Test']);
-    assert.deepEqual(widget.padding, [10, 15, 10, 15]);
+    assert.deepEqual(widget.padding, [0, 0, 0, 0]);
+    assert.deepEqual(widget.children[0]?.size, new env.globals.Size(320, 340));
     assert.deepEqual(widget.backgroundImage, { pixels: dark ? 'dark' : 'light' });
     assert.deepEqual(env.cloud.store, before);
     assert.equal(env.secrets.get('weather-cal-qweather-host:WeatherCal-Test'), 'stored-host');

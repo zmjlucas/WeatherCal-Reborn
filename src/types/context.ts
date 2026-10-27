@@ -1,6 +1,7 @@
+import type { WidgetLayoutOptions } from '../layout/types';
 import type { ParsedSettings, LocalizationSettings, FontFormat, EditingSettings, EditableCategory, CalendarReference } from './settings';
 import type { WidgetData, WeatherData, SunData, WeatherResponse } from './data';
-import type { CustomItems, ASCIIColumn, LayoutInput, WidgetContainer, ColorFormat, GradientSettings, RuntimeSettings, RuntimeFontSettings } from './rendering';
+import type { CustomItems, LayoutInput, WidgetContainer, ColorFormat, GradientSettings, RuntimeSettings, RuntimeFontSettings } from './rendering';
 
 export type { CustomItems, LayoutInput } from './rendering';
 type PromptValue = string | number | boolean | null | undefined;
@@ -19,17 +20,9 @@ export class WidgetState {
   padding = 0;
   darkMode = false;
   custom: CustomItems | undefined;
-  usingASCII: boolean | undefined;
-  currentColumns: Array<ASCIIColumn | undefined> = [];
-  rowNeedsSetup = false;
-  currentAlignment = (stack: WidgetStack): WidgetStack => stack.addStack();
-
   private fileManager: FileManager | undefined;
   private parsedSettings: RuntimeSettings | undefined;
   private listWidget: ListWidget | undefined;
-  private rowStack: WidgetStack | undefined;
-  private columnStack: WidgetStack | undefined;
-  private pendingColumn: Record<string, unknown> = {};
   private textFormats: RuntimeFontSettings | undefined;
   private localizedText: LocalizationSettings | undefined;
 
@@ -49,21 +42,6 @@ export class WidgetState {
     return this.listWidget;
   }
   set widget(value: ListWidget) { this.listWidget = value; }
-  get currentRow(): WidgetStack {
-    if (!this.rowStack) throw new Error('A row must precede columns in the layout.');
-    return this.rowStack;
-  }
-  set currentRow(value: WidgetStack | undefined) { this.rowStack = value; }
-  get currentColumn(): WidgetStack {
-    if (!this.columnStack) throw new Error('A column must precede items in the layout.');
-    return this.columnStack;
-  }
-  set currentColumn(value: WidgetStack | undefined) {
-    this.columnStack = value;
-    if (!value) this.pendingColumn = {};
-  }
-  /** Before the first column, legacy custom directives receive the same empty object. */
-  get layoutColumn(): WidgetStack | Record<string, unknown> { return this.columnStack ?? this.pendingColumn; }
   get format(): RuntimeFontSettings {
     if (!this.textFormats) throw new Error('Load font preferences before rendering.');
     return this.textFormats;
@@ -79,17 +57,8 @@ export class WidgetState {
 export interface WeatherCalContext extends WidgetState {
   enum: { caps: { upper: string; lower: string; title: string; none: string }; icons: { never: string; always: string; dark: string; light: string } };
   initialize(name: string, iCloudInUse: boolean): void;
-  createWidget(layout: LayoutInput, name: string, iCloudInUse: boolean, custom?: CustomItems): Promise<ListWidget>;
-  executeItem(item: string): Promise<void>;
-  processASCIILine(line: string): Promise<void>;
-  row(input?: WidgetStack, parameter?: string | number | null): void;
-  column(input?: WidgetStack, parameter?: string | number | null): void;
-  space(input: WidgetStack, parameter?: string | number | null): void;
+  createWidget(layout: LayoutInput, name: string, iCloudInUse: boolean, custom?: CustomItems, options?: WidgetLayoutOptions): Promise<ListWidget>;
   align(column: WidgetContainer): WidgetStack;
-  setAlignment(left?: boolean, right?: boolean): void;
-  right(): void;
-  left(): void;
-  center(): void;
   displayNumber(number: number | null | undefined, dummy?: string): string;
   tintIcon(icon: WidgetImage, format?: ColorFormat | null, force?: boolean): void;
   isNight(dateInput: Date): boolean;
@@ -135,13 +104,13 @@ export interface WeatherCalContext extends WidgetState {
   date(column: WidgetStack): Promise<void>;
   events(column: WidgetStack): Promise<void | WidgetText>;
   reminders(column: WidgetStack): Promise<void | WidgetText>;
-  current(column: WidgetStack): Promise<void>;
+  current(column: WidgetStack, horizontal?: boolean): Promise<void>;
   future(column: WidgetStack): Promise<void>;
   rain(column: WidgetStack): Promise<void>;
-  forecast(column: WidgetStack, hourly?: boolean): Promise<void>;
-  daily(column: WidgetStack): Promise<void>;
-  hourly(column: WidgetStack): Promise<void>;
-  sunrise(column: WidgetStack, forceSunset?: boolean): Promise<void>;
+  forecast(column: WidgetStack, hourly?: boolean, horizontal?: boolean): Promise<void>;
+  daily(column: WidgetStack, horizontal?: boolean): Promise<void>;
+  hourly(column: WidgetStack, horizontal?: boolean): Promise<void>;
+  sunrise(column: WidgetStack): Promise<void>;
   sunset(column: WidgetStack): Promise<void>;
   greeting(column: WidgetStack): void;
   text(column: WidgetStack, input?: string | null): void;

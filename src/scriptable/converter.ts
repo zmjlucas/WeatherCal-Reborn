@@ -18,7 +18,7 @@ async function textPrompt(message: string): Promise<string | undefined> {
 }
 
 async function runConverter(): Promise<void> {
-  const name = await textPrompt('Choose a custom item name, such as clock. The output must be reviewed before use.');
+  const name = await textPrompt('Choose a render helper name, such as clock. The output needs a measured ItemModule wrapper; see docs/LAYOUT.md before use.');
   if (!name) return;
   const selected = await DocumentPicker.openFile();
   // Some Scriptable versions return a selection array.

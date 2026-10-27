@@ -11,7 +11,7 @@ async function runWidget(): Promise<void> {
     preview = await code.runSetup(Script.name(), iCloudInUse);
     if (!preview) return;
   }
-  const widget = await code.createWidget(layout, Script.name(), iCloudInUse, custom);
+  const widget = await code.createWidget(layout, Script.name(), iCloudInUse, custom, preview === 'small' || preview === 'medium' || preview === 'large' ? { family: preview } : {});
   Script.setWidget(widget);
   if (config.runsInApp) {
     if (preview === 'small') await widget.presentSmall();

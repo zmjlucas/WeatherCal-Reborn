@@ -6,7 +6,6 @@ import font from './schema/font';
 import date from './schema/date';
 import events from './schema/events';
 import reminders from './schema/reminders';
-import sunrise from './schema/sunrise';
 import weather from './schema/weather';
 import symbol from './schema/symbol';
 import type { WeatherCalContext } from '../types/context';
@@ -31,7 +30,6 @@ export default {
       ...await date.call(this, getFromCalendar),
       ...await events.call(this, getFromCalendar),
       ...await reminders.call(this, getFromCalendar),
-      ...await sunrise.call(this, getFromCalendar),
       ...await weather.call(this, getFromCalendar),
       ...await symbol.call(this, getFromCalendar),
     };

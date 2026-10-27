@@ -1,6 +1,5 @@
 // All public methods retain their original `this` context for custom widget code.
 import widget from './widget';
-import layout from './layout/engine';
 import formatting from './core/formatting';
 import drawing from './core/drawing';
 import gradient from './core/gradient';
@@ -25,7 +24,7 @@ import type { WeatherCalContext } from './types/context';
 
 export function createWeatherCal(): WeatherCalContext {
   return Object.assign(new WidgetState(), {
-    ...widget, ...layout, ...formatting, ...drawing, ...gradient, ...prompts, ...storage,
+    ...widget, ...formatting, ...drawing, ...gradient, ...prompts, ...storage,
     ...defaults, ...store, ...editor, ...cache, ...agenda, ...location, ...weather, ...rain,
     ...items, ...menu, ...onboarding, ...weatherProvider, ...backgrounds, ...distribution,
     // Clone mutable enum groups per instance without a JSON or assertion boundary.

@@ -33,11 +33,8 @@ export default {
     const settingUrlExists = (eventSettings.url || "").length > 0
     if (events.length == 0) {
       const secondsForToday = Math.floor(new Date().getTime() / 1000) - 978307200
-      if (eventSettings.noEventBehavior == "message" && this.localization.noEventMessage.length) { return this.provideText(this.localization.noEventMessage, column, this.format.noEvents, true, settingUrlExists ? eventSettings.url : "calshow:" + secondsForToday) }
-      const customItem = this.custom?.[eventSettings.noEventBehavior]
-      if (typeof customItem === "function" && this.custom) { await customItem.call(this.custom, column); return }
-      const fallback: unknown = Reflect.get(this, eventSettings.noEventBehavior)
-      if (typeof fallback === "function") { await fallback.call(this, column); return }
+      if (this.localization.noEventMessage.length) { return this.provideText(this.localization.noEventMessage, column, this.format.noEvents, true, settingUrlExists ? eventSettings.url : "calshow:" + secondsForToday) }
+      return
     }
 
     let currentStack: WidgetStack
@@ -130,11 +127,8 @@ export default {
     const reminderSettings = this.settings.reminders
 
     if (reminders.length == 0) {
-      if (reminderSettings.noRemindersBehavior == "message" && this.localization.noRemindersMessage.length) { return this.provideText(this.localization.noRemindersMessage, column, this.format.noReminders, true) }
-      const customItem = this.custom?.[reminderSettings.noRemindersBehavior]
-      if (typeof customItem === "function" && this.custom) { await customItem.call(this.custom, column); return }
-      const fallback: unknown = Reflect.get(this, reminderSettings.noRemindersBehavior)
-      if (typeof fallback === "function") { await fallback.call(this, column); return }
+      if (this.localization.noRemindersMessage.length) { return this.provideText(this.localization.noRemindersMessage, column, this.format.noReminders, true) }
+      return
     }
 
     const reminderStack = column.addStack()
