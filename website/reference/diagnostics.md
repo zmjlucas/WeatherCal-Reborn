@@ -41,7 +41,7 @@ Unknown container properties also produce `INVALID_PROPERTY`.
 
 For example, this root width conflicts with a 320-point viewport width:
 
-<<< ../examples/layouts.ts#constraint-conflict
+<<< ../examples/layouts.js#constraint-conflict
 
 To create a smaller region, put the fixed-size node inside a full-viewport root.
 

@@ -41,7 +41,7 @@
 
 例如，以下根宽度与320逻辑点的视口宽度冲突：
 
-<<< ../../examples/layouts.ts#constraint-conflict
+<<< ../../examples/layouts.js#constraint-conflict
 
 如需创建较小区域，请将固定尺寸节点放在占满视口的根节点内。
 

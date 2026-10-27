@@ -31,10 +31,15 @@ It remains visible when that data is unavailable.
 ## Select a variant {#select-a-variant}
 
 ```js
-const layout = `column(padding: 12, gap: 8)[
+//#region variants
+// Keep the selected weather and forecast variants.
+var layout = `
+column(padding: 12, gap: 8)[
   current(variant: "stacked"),
   daily(variant: "vertical")
-]`
+]
+`;
+//#endregion variants
 ```
 
 Without `variant`, the planner can select a registered presentation.

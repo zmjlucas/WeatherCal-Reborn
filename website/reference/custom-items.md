@@ -15,8 +15,7 @@ It does not measure native text.
 
 <<< ../examples/custom-item.js#custom-item
 
-Replace the installed `custom` value with the example's `custom` object.
-Copy the `customLayout` template-string value into your installed `layout` value.
+Use this example to replace the existing `var custom` and `var layout` definitions in the user region.
 
 This item keeps its original font size inside automatic regions because it does not implement `atFontScale`.
 Do the [device checks](../guide/device-checks.md) with your actual labels and fonts.

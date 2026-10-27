@@ -5,17 +5,15 @@
 
 ## 设置布局 {#set-the-layout}
 
-1. 在Scriptable中打开已安装的`one.js`脚本。
+1. 在Scriptable中打开已安装的`WeatherCal-Reborn.js`脚本。
 2. 找到`WeatherCal: user begin`标记。
 3. 找到用户区域内的`layout`值。
-4. 用下方示例的字符串内容替换反引号之间的文本。
+4. 用下方完整示例替换现有的`var layout`定义。
 5. 保存脚本。
 
-<<< ../../examples/layouts.ts#auto
+<<< ../../examples/layouts.js#auto
 
-`autoLayout`是文档示例的名称。
-已安装脚本使用的名称是`layout`。
-只复制反引号之间的文本。
+用户区域中只保留一个`var layout`定义。
 
 这个示例选择`current`、`rain`和`future`。
 降雨数据不可用时，`rain`会显示提示。

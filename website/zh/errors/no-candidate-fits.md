@@ -8,7 +8,7 @@
 
 以下示例超出320 × 160逻辑点视口的宽度：
 
-<<< ../../examples/layouts.ts#no-candidate
+<<< ../../examples/layouts.js#no-candidate
 
 子节点的固定宽度总和超出视口宽度。
 缩小字号不能移除这些显式宽度约束。

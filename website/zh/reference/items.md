@@ -31,10 +31,15 @@
 ## 选择呈现变体 {#select-a-variant}
 
 ```js
-const layout = `column(padding: 12, gap: 8)[
+//#region variants
+// Keep the selected weather and forecast variants.
+var layout = `
+column(padding: 12, gap: 8)[
   current(variant: "stacked"),
   daily(variant: "vertical")
-]`
+]
+`;
+//#endregion variants
 ```
 
 未指定`variant`时，规划器可以选择已注册的呈现方式。

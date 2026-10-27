@@ -30,7 +30,7 @@
 
 ## 在规划器测试中复现诊断 {#planner-test}
 
-<<< ../../examples/layouts.ts#search-limit
+<<< ../../examples/layouts.js#search-limit
 
 共享测试使用内部规划器覆盖值`maxMeasurements: 1`运行此布局。
 这个预算只允许测量一次，但这三个内容项需要更多次测量才能得到完整方案。

@@ -30,7 +30,7 @@ See [Planning limits](../explanation/planning.md#limits).
 
 ## Reproduce the diagnostic in a planner test {#planner-test}
 
-<<< ../examples/layouts.ts#search-limit
+<<< ../examples/layouts.js#search-limit
 
 The shared test runs this layout with the internal planner override `maxMeasurements: 1`.
 This budget permits one measurement, but the three items need more measurements for a complete plan.

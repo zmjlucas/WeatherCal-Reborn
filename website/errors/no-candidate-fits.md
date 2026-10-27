@@ -8,7 +8,7 @@ The search does not evaluate every possible arrangement.
 
 This example exceeds the width of a 320 × 160-point viewport:
 
-<<< ../examples/layouts.ts#no-candidate
+<<< ../examples/layouts.js#no-candidate
 
 The fixed child widths exceed the viewport width.
 Font reduction cannot remove these explicit width constraints.

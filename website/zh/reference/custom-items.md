@@ -15,8 +15,7 @@
 
 <<< ../../examples/custom-item.js#custom-item
 
-用示例的`custom`对象替换已安装脚本中的`custom`值。
-将`customLayout`模板字符串的内容复制到已安装脚本的`layout`值中。
+用此示例替换用户区域中现有的`var custom`和`var layout`定义。
 
 这个内容项没有实现`atFontScale`，因此在自动区域中也会保留原始字号。
 请使用实际文本和字体完成[真机检查](../guide/device-checks.md)。

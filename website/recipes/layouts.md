@@ -4,14 +4,13 @@ These examples use `current`, `rain`, and `future` in each layout mode.
 The combined example also puts `date` outside the automatic region.
 
 Each code block comes from the shared example source.
-Copy its template-string value into the installed `layout` value.
-Do not copy its documentation export name.
+Use one example to replace the existing `var layout` definition in `WeatherCal-Reborn.js`.
 
 ## Let the order change {#auto}
 
 Use `auto` when the engine can change the order of direct children.
 
-<<< ../examples/layouts.ts#auto
+<<< ../examples/layouts.js#auto
 
 The engine uses content measurements to select a row, column, grid, band, or side group.
 
@@ -19,7 +18,7 @@ The engine uses content measurements to select a row, column, grid, band, or sid
 
 Use `flow` when the listed reading order must stay the same.
 
-<<< ../examples/layouts.ts#flow
+<<< ../examples/layouts.js#flow
 
 Read the result row by row, from left to right.
 The direct children keep their listed order in that reading sequence.
@@ -29,7 +28,7 @@ Their positions can change between structures.
 
 Use `row` and `column` to keep the specified groups.
 
-<<< ../examples/layouts.ts#manual
+<<< ../examples/layouts.js#manual
 
 This layout keeps `current`, `rain`, and `future` in one horizontal row.
 The engine does not reduce fonts in this manual layout.
@@ -39,7 +38,7 @@ If content needs more space than the viewport, this layout can fail.
 
 Put an automatic region inside a manual container.
 
-<<< ../examples/layouts.ts#semi-auto
+<<< ../examples/layouts.js#semi-auto
 
 The `date` item stays above the automatic region and keeps its font sizes.
 The automatic region can change the order and grouping of its weather items.

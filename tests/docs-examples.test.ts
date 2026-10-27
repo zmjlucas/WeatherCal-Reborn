@@ -1,14 +1,23 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
 import { parseLayout } from '#source/layout/parser';
 import { planLayout } from '#source/layout/planner';
 import { prepareItems } from '#source/items/registry';
 import type { ItemModule, LayoutNode, PreparedItem, ResolvedNode } from '#source/layout/types';
 import { initializedContext } from './helpers/context';
 import { installScriptable, texts, descendants } from './helpers/scriptable';
-import { autoLayout, flowLayout, manualLayout, semiAutoLayout, constraintConflictLayout,
-  noCandidateLayout, searchLimitLayout } from '../website/examples/layouts';
-import { custom, customLayout } from '../website/examples/custom-item.js';
+
+function publishedExample(file: string, region: string, globals: Record<string, unknown> = {}) {
+  const source = readFileSync(new URL(`../website/examples/${file}`, import.meta.url), 'utf8').replaceAll('\r\n', '\n');
+  const snippet = source.split(`//#region ${region}\n`)[1]?.split(`//#endregion ${region}`)[0];
+  assert(snippet, `Missing published region ${region}`);
+  const scope = { ...globals };
+  runInNewContext(snippet, scope, { filename: `${file}#${region}`, timeout: 1000 });
+  assert.equal(typeof scope.layout, 'string');
+  return { layout: scope.layout as string, custom: scope.custom as { items: Record<string, ItemModule> } | undefined };
+}
 
 // These dimensions describe controlled fixtures, not phone or weather measurements.
 const viewport = { family: 'medium' as const, width: 320, height: 160, confidence: 'estimated' as const, source: 'documentation fixture' };
@@ -26,9 +35,9 @@ function nodes(root: ResolvedNode): ResolvedNode[] {
   return [root, ...root.children.flatMap(nodes)];
 }
 
-for (const [label, source] of [['auto', autoLayout], ['flow', flowLayout], ['manual', manualLayout], ['semi-auto', semiAutoLayout]] as const) {
+for (const label of ['auto', 'flow', 'manual', 'semi-auto'] as const) {
   test(`published ${label} example keeps every selected item inside its viewport`, () => {
-    const root = parseLayout(source);
+    const root = parseLayout(publishedExample('layouts.js', label).layout);
     const result = planLayout(root, viewport, inputs(root));
     assert(result.ok, JSON.stringify(result.diagnostics));
     const all = nodes(result.tree);
@@ -54,13 +63,13 @@ for (const [label, source] of [['auto', autoLayout], ['flow', flowLayout], ['man
   });
 }
 
-for (const [source, code, limits] of [
-  [constraintConflictLayout, 'CONSTRAINT_CONFLICT', {}],
-  [noCandidateLayout, 'NO_CANDIDATE_FITS', {}],
-  [searchLimitLayout, 'SEARCH_LIMIT_REACHED', { maxMeasurements: 1 }],
+for (const [region, code, limits] of [
+  ['constraint-conflict', 'CONSTRAINT_CONFLICT', {}],
+  ['no-candidate', 'NO_CANDIDATE_FITS', {}],
+  ['search-limit', 'SEARCH_LIMIT_REACHED', { maxMeasurements: 1 }],
 ] as const) {
   test(`published failure example produces ${code}`, () => {
-    const root = parseLayout(source);
+    const root = parseLayout(publishedExample('layouts.js', region).layout);
     const result = planLayout(root, viewport, inputs(root), limits);
     assert.equal(result.ok, false);
     assert(result.diagnostics.some(diagnostic => diagnostic.code === code), JSON.stringify(result.diagnostics));
@@ -70,9 +79,11 @@ for (const [source, code, limits] of [
 test('published custom item measures and renders its prepared label and font snapshot', async t => {
   const env = installScriptable(t);
   const host = await initializedContext(env);
-  const root = parseLayout(customLayout);
+  const { layout, custom } = publishedExample('custom-item.js', 'custom-item', env.globals);
+  assert(custom);
+  const root = parseLayout(layout);
   const items = await prepareItems(root, host, {
-    ...custom.items as unknown as Record<string, ItemModule>,
+    ...custom.items,
     current: { async prepare() { return prepared(); } },
   });
   const result = planLayout(root, viewport, items);

@@ -8,12 +8,17 @@ It does not execute JavaScript inside the layout string.
 ## Write a node {#write-a-node}
 
 ```js
-const layout = `column(gap: 6, padding: [8, 12, 8, 12])[
+//#region syntax
+// Combine text, a fixed row, spaces, and an ordered weather region.
+var layout = `
+column(gap: 6, padding: [8, 12, 8, 12])[
   text("Good morning"),
   row(gap: 8)[symbol("cloud.rain.fill"), space, battery],
   space(4),
   flow[current, future]
-]`
+]
+`;
+//#endregion syntax
 ```
 
 Separate arguments and children with commas.

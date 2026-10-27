@@ -1,5 +1,6 @@
 //#region custom-item
-export const custom = {
+// Add a status item that measures and renders one text line.
+var custom = {
   items: {
     status: {
       options: { label: "string" },
@@ -45,10 +46,13 @@ export const custom = {
   background(widget) {
     widget.backgroundColor = Color.black()
   }
-}
+};
 
-export const customLayout = `column(padding: 12)[
+// Put the status item above current weather.
+var layout = `
+column(padding: 12)[
   status(label: "Ready"),
   current
-]`
+]
+`;
 //#endregion custom-item

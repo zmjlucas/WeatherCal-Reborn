@@ -4,14 +4,13 @@
 组合示例还会在自动区域外放置`date`。
 
 每个代码块都来自共享示例源文件。
-请将模板字符串的内容复制到已安装脚本的`layout`值中。
-不要复制文档示例的导出名称。
+选择一个示例，替换`WeatherCal-Reborn.js`中现有的`var layout`定义。
 
 ## 允许调整顺序 {#auto}
 
 如果允许引擎调整直接子节点的顺序，请使用`auto`自动布局。
 
-<<< ../../examples/layouts.ts#auto
+<<< ../../examples/layouts.js#auto
 
 引擎根据内容测量结果选择行、列、网格、横向通栏或侧边分组。
 
@@ -19,7 +18,7 @@
 
 如果必须保留列出的阅读顺序，请使用`flow`保序布局。
 
-<<< ../../examples/layouts.ts#flow
+<<< ../../examples/layouts.js#flow
 
 按从左到右、逐行的方式阅读结果。
 直接子节点在这个阅读序列中保留原有顺序。
@@ -29,7 +28,7 @@
 
 使用`row`和`column`保持指定分组。
 
-<<< ../../examples/layouts.ts#manual
+<<< ../../examples/layouts.js#manual
 
 该布局将`current`、`rain`和`future`保持在同一水平行中。
 引擎不会缩小这个手动布局的字号。
@@ -39,7 +38,7 @@
 
 在手动容器中放入自动区域。
 
-<<< ../../examples/layouts.ts#semi-auto
+<<< ../../examples/layouts.js#semi-auto
 
 `date`始终位于自动区域上方，字号保持不变。
 自动区域可以调整天气内容项的顺序和分组。

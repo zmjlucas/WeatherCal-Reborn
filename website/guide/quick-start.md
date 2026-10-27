@@ -5,17 +5,15 @@ For earlier formats, use [Migration](./migrate.md) first.
 
 ## Set the layout {#set-the-layout}
 
-1. Open your installed `one.js` script in Scriptable.
+1. Open your installed `WeatherCal-Reborn.js` script in Scriptable.
 2. Find the `WeatherCal: user begin` marker.
 3. Find the `layout` value inside the user region.
-4. Replace the text between its backticks with the example value below.
+4. Replace the existing `var layout` definition with the complete example below.
 5. Save the script.
 
-<<< ../examples/layouts.ts#auto
+<<< ../examples/layouts.js#auto
 
-`autoLayout` is the name of this documentation example.
-The installed script uses the name `layout`.
-Copy only the text between the backticks.
+Keep one `var layout` definition in the user region.
 
 This example selects `current`, `rain`, and `future`.
 When rain data is unavailable, the `rain` item shows a message.
