@@ -40,5 +40,4 @@ Automatic regions try presets, further search, and bounded font reduction.
 They do not remove selected content to obtain a fit.
 
 These pages describe the implementation identified in [Version and verification](./about/version.md).
-The structure diagrams are schematic.
-They are not native Scriptable previews.
+The diagrams show layout structure; they do not show native Scriptable output.

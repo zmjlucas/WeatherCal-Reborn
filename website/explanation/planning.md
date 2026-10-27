@@ -41,7 +41,7 @@ The engine tries these stages in order:
 3. Presets and search at 80%.
 4. Presets and search at 70%.
 
-The first successful stage wins.
+The engine uses the first successful stage.
 A full-size solution takes priority over smaller text.
 Only items inside automatic regions can use font adaptation.
 Manual siblings retain their original font sizes.
@@ -54,7 +54,7 @@ Measurement and rendering use the same selected snapshot.
 
 Built-in items support this adaptation.
 For font adaptation, custom items need the optional [`atFontScale` contract](../reference/custom-items.md#font-adaptation).
-Without that method, a custom item keeps its original typography.
+Without that method, a custom item keeps its original font settings.
 
 ## Share available space {#share-available-space}
 

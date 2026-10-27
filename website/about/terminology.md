@@ -47,8 +47,6 @@ The Chinese pages use the same identifiers and example sources.
 
 ## Computer-process verbs {#computer-process-verbs}
 
-These technical verbs describe computer processes in this guide.
-
 | Verb | Meaning |
 | --- | --- |
 | parse | Convert the layout string into a tree of nodes. |
@@ -72,6 +70,4 @@ Use “Make sure that” for a necessary condition.
 Use “Do a check” or “Examine” for an inspection action.
 Do not replace one technical noun with different words for variety.
 
-These conventions support ASD-STE100 principles.
-They do not certify complete dictionary conformance.
 See the [official STE questions and answers](https://www.asd-ste100.org/STE_faq.html).

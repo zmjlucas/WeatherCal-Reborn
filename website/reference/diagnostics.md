@@ -2,7 +2,7 @@
 
 A failed plan displays a diagnostic widget.
 It does not display a partial content tree.
-Located diagnostics include the related node, source line, and source column when available.
+When available, diagnostics include the related node, source line, and source column.
 
 ## Viewport and family {#viewport-and-family}
 
@@ -28,7 +28,7 @@ Located diagnostics include the related node, source line, and source column whe
 | `UNKNOWN_VARIANT` | The pure planner cannot find the requested variant | Supply prepared variants that match the layout. |
 | `ITEM_CONTRACT_INVALID` | A module or measurement breaks its contract | Examine the [custom item contract](./custom-items.md). |
 
-Item names and private options are validated before content loading starts.
+The engine validates item names and private options before it loads content.
 Unknown container properties also produce `INVALID_PROPERTY`.
 
 ## Planning failures {#planning-failures}

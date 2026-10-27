@@ -2,8 +2,7 @@
 
 The current engine accepts one tree in a `layout` string.
 It does not accept earlier line commands, ASCII layouts, or settings-object layouts.
-Code updates keep the user region.
-They do not translate its layout or custom code.
+Code updates keep the user region, including its unchanged layout and custom code.
 
 ## Replace an earlier layout {#replace-an-earlier-layout}
 
@@ -35,8 +34,7 @@ It contributes to the measured item size.
 
 ## Keep the correct viewport {#keep-the-correct-viewport}
 
-Blank viewport preferences now enable automatic detection.
-The value `auto` has the same effect.
+Blank viewport preferences and `auto` enable automatic detection.
 Existing manual values still take priority.
 See [Viewport](./viewport.md) before you remove a measured override.
 

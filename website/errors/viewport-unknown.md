@@ -2,12 +2,10 @@
 
 The engine has no usable viewport dimensions for the selected family.
 Automatic detection cannot match the screen profile, or it cannot read the screen size.
-A manual viewport is not necessary for every user.
 
 ## Identify the cause {#identify-the-cause}
 
-Read the diagnostic message.
-It identifies either an unknown screen size or an unavailable screen API.
+Read the diagnostic message for the cause: an unknown screen size or an unavailable screen API.
 
 Blank viewport preferences and `auto` enable automatic detection.
 Known profiles normally supply the dimensions.

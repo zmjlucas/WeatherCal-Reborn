@@ -9,18 +9,16 @@ The names `row`, `column`, `auto`, `flow`, and `space` are reserved.
 
 ## Use a complete example {#complete-example}
 
-The example has one unwrapped text line and a conservative width estimate.
-It captures text, font, and color during preparation.
-Its measurement is an estimate, not a native text measurement.
+The example renders one unwrapped text line.
+During preparation, it captures the text, font, color, and a conservative width estimate.
+It does not measure native text.
 
 <<< ../examples/custom-item.js#custom-item
 
-Copy the `custom` object value into your installed `custom` value.
+Replace the installed `custom` value with the example's `custom` object.
 Copy the `customLayout` template-string value into your installed `layout` value.
-The export names belong to the documentation example.
 
-This item does not implement `atFontScale`.
-It keeps its original font size inside automatic regions.
+This item keeps its original font size inside automatic regions because it does not implement `atFontScale`.
 Do the [device checks](../guide/device-checks.md) with your actual labels and fonts.
 
 ## Prepare a snapshot {#prepare}

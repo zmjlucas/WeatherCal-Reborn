@@ -80,7 +80,7 @@ const widget = await code.createWidget(layout, name, iCloudInUse, custom, {
 })
 ```
 
-This example uses experimental dimensions.
+These are example dimensions.
 The installed entry selects the preview family before planning.
 A home-screen run uses `config.widgetFamily`.
 An explicit family must agree with the active widget family.

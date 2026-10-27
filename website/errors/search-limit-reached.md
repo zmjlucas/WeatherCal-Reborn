@@ -1,10 +1,10 @@
 # SEARCH_LIMIT_REACHED {#search-limit-reached}
 
-A hard candidate or measurement budget ended before the engine found a complete plan.
-A possible arrangement can still give a fit.
+The engine reached its candidate or measurement limit before it found a complete plan.
+Another arrangement can still fit.
 The engine does not return a partial content tree.
 
-## Reduce the search problem {#reduce-the-search-problem}
+## Reduce search choices {#reduce-the-search-problem}
 
 1. Put related items in manual `row` or `column` groups.
 2. Use `flow` if the listed order must remain the same.
@@ -33,8 +33,7 @@ See [Planning limits](../explanation/planning.md#limits).
 <<< ../examples/layouts.ts#search-limit
 
 The shared test runs this layout with the internal planner override `maxMeasurements: 1`.
-The engine can make only one measurement with this budget.
-The three items need more measurements for a complete plan.
+This budget permits one measurement, but the three items need more measurements for a complete plan.
 `maxMeasurements` is not a layout property or a user preference.
 Do not put it in the installed layout string.
 

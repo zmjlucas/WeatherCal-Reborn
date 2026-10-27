@@ -1,6 +1,6 @@
 # Maintain the layout documentation
 
-The public site uses VitePress **1.6.4**. Its source is `website/`.
+The public site uses VitePress 1.6.4. Its source is `website/`.
 English is the default language. Chinese pages use the `website/zh/` directory.
 Research notes in `docs/research/` are not site pages.
 
@@ -36,8 +36,6 @@ These checks do not measure native Scriptable text or prove STE vocabulary compl
 
 Use [ASD-STE100 Issue 9](https://www.asd-ste100.org/STE_downloads.html) for the English text.
 Read its rules and dictionary when you select words.
-The following notes summarize the editorial method for this project.
-They do not replace the standard.
 
 - Use short, complete sentences with a clear subject.
 - Keep each procedural sentence at 20 words or fewer.
@@ -61,7 +59,6 @@ Keep the same route, heading IDs, code imports, and technical facts.
 Translate the prose, not the code identifiers.
 When the English meaning changes, update the Chinese page in the same change.
 
-The official standard is a reference, not a site asset.
 Do not add its PDF or dictionary to the repository.
 A sentence-length check is only an editing aid.
 It cannot determine approved word meanings or parts of speech.
@@ -74,7 +71,7 @@ The tests in `tests/docs-examples.test.ts` verify their parser and planner behav
 Update those tests when an example's intended behavior changes.
 
 The diagrams show possible structures. They are not screenshots of Scriptable.
-Keep captions explicit about that distinction.
+Label diagrams as schematic.
 For screenshots, record the device, OS, widget family, and display settings.
 
 ## Maintain local search
@@ -111,7 +108,7 @@ The default project URL is:
 
 [WeatherCal Layout documentation](https://zmjlucas.github.io/WeatherCal-Reborn/)
 
-This URL is a deployment target. It does not prove that a deployment succeeded.
+After deployment, open this URL.
 Use the workflow run and its deployment URL to verify publication.
 If you change the repository name or domain, update the VitePress base path.
 Then verify links, language changes, search results, and resources again.

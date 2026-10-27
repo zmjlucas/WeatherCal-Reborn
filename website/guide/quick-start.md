@@ -1,6 +1,6 @@
 # Quick start {#quick-start}
 
-This procedure needs an installed WeatherCal-Reborn script with the current layout engine.
+Install a WeatherCal-Reborn script with the current layout engine before you start.
 For earlier formats, use [Migration](./migrate.md) first.
 
 ## Set the layout {#set-the-layout}
@@ -18,7 +18,7 @@ The installed script uses the name `layout`.
 Copy only the text between the backticks.
 
 This example selects `current`, `rain`, and `future`.
-The `rain` item shows an availability message when its data is unavailable.
+When rain data is unavailable, the `rain` item shows a message.
 See [Built-in items](../reference/items.md).
 
 ## Show the widget {#show-the-widget}

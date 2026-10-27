@@ -1,8 +1,7 @@
 # Device checks {#device-checks}
 
-A successful estimated plan does not prove that native text stays inside its allocated area.
-Repository tests use simulated measurements and views.
-They do not measure clipping on a phone.
+Repository tests use simulated measurements and views, so they cannot detect text clipping on a phone.
+Use this procedure to test the planned layout on your device.
 
 ## Record the test conditions {#record-the-test-conditions}
 
@@ -20,7 +19,7 @@ Record these values for each device test:
 ## Do the geometry checks {#do-the-geometry-checks}
 
 1. [Obtain usable widget dimensions](./viewport.md#obtain-usable-dimensions) for the test configuration.
-2. Record its width and height in logical points.
+2. Record the widget width and height in logical points.
 3. Compare the app preview with the home-screen widget.
 4. Examine fixed frames with visible backgrounds or borders.
 5. Examine root padding, item padding, and gaps.
@@ -49,7 +48,7 @@ The planner includes these limits in its height estimates.
 3. Examine the widget background.
 4. Record refresh requests and actual refresh times.
 5. Run a layout near the documented [planning limits](../explanation/planning.md#limits).
-6. Record runtime and memory behavior.
+6. Record runtime and memory use.
 
 Small widgets have one widget-level tap target.
 iOS can refresh the widget after the requested time.

@@ -1,7 +1,6 @@
 # Built-in items {#built-in-items}
 
-Each selected name creates one item instance.
-Repeated names create separate instances.
+Each occurrence of a name creates a separate item instance.
 A successful plan contains all selected instances, including empty and error presentations.
 
 ## Select an item {#select-an-item}
@@ -18,7 +17,7 @@ A successful plan contains all selected instances, including empty and error pre
 | `future` | Next hour or tomorrow, from weather preferences | `normal` |
 | `forecast`, `daily` | Daily forecasts; these names are aliases | `horizontal`, `vertical` |
 | `hourly` | Hourly forecast | `horizontal`, `vertical` |
-| `rain` | QWeather minutely summary with a source link, or an availability message | `normal` |
+| `rain` | QWeather minutely summary with a source link, or a message when data is unavailable | `normal` |
 | `sunrise` | Sunrise, including tomorrow's sunrise after sunset | `normal` |
 | `sunset` | Sunset | `normal` |
 | `text("Hello")` | Custom text | `normal` |
@@ -51,7 +50,7 @@ Measurement and rendering use the same selected font size.
 
 Events and reminders show a localized message when no entries are available.
 If that message is blank, they show a fallback message.
-Sun items show a visible unavailable state when the named event has no usable data.
+When the named event has no usable data, sun items show an unavailable state.
 
 Explicit `sunrise` and `sunset` items always select their named event.
 The old sun display time-window controls no longer apply.
