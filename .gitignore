@@ -12,3 +12,7 @@ docs/superpowers/
 .icloud-backups/
 
 .env
+
+# VitePress build output and development cache.
+website/.vitepress/dist/
+website/.vitepress/cache/
