@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-27
+
+This release changes the layout and custom-item contracts. Existing installations need a manual upgrade and migration of their editable user region. On-device Scriptable verification is still required; automated weather-provider tests use offline doubles.
+
 ### Changed
 
 - **Breaking:** Replaced line-based layout commands, ASCII layouts and settings-object input with one recursive `row`/`column`/`auto`/`flow` DSL. Automatic regions preserve every selected instance; `auto` may reorder direct children and `flow` preserves their reading order. Existing user regions require manual migration.
@@ -18,6 +22,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- QWeather minute-by-minute precipitation nowcasts with a `rain` item, cached requests, and near-term rain start/stop times.
+- A configurable widget refresh interval and device-local build timestamps for iCloud uploads.
+- English and Chinese layout documentation with local search, shared tested examples, migration guidance, and GitHub Pages deployment.
 - Family-specific layout presets before general auto/flow search, including side panels beside stacked items. When original fonts do not fit, automatic content tries measured 90%/80%/70% fonts with a 10pt floor, preserving selected content and manual constraints. Custom prepared items can opt in through `atFontScale`.
 - Bounded, deterministic layout planning with width-dependent height estimates, fixed/min/max dimensions, local alignment, explicit gaps/padding and complete-plan diagnostics.
 - Automatic viewport detection for small, medium and large widgets using sourced screen-size profiles. Blank or `auto` settings select detection; manual per-family and programmatic dimensions take priority. Home-screen runs and app previews use their own selected family. Profiles assume standard icons; unknown screens require a manual override.
@@ -25,6 +32,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Fixed
 
+- Prepared weather items retain usable cached values when a QWeather refresh fails or enters a rate-limit cooldown.
+- Tomorrow's precipitation probability now uses the matching day/night forecast period.
 - Small weather layouts no longer rely only on fixed-font row/band structures. Duplicate structures are deduplicated, search budgets are shared across fallback stages, and frontier pruning alone no longer reports `SEARCH_LIMIT_REACHED`.
 
 ## [0.1.0] - 2026-10-26
