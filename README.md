@@ -1,6 +1,6 @@
 # WeatherCal-Reborn
 
-An unofficial rewrite of the original [Weather-Cal](https://github.com/mzeryck/Weather-Cal) Scriptable widget, enabling a more modular and maintainable codebase with additional features.
+An unofficial, modular rewrite of the [Weather-Cal](https://github.com/mzeryck/Weather-Cal) Scriptable widget with additional features.
 
 > [!WARNING]
 > This project is under active development.
@@ -8,7 +8,7 @@ An unofficial rewrite of the original [Weather-Cal](https://github.com/mzeryck/W
 ## Quick Start
 
 1. Install [Scriptable](https://scriptable.app/) on your iPhone or iPad.
-2. Create a new script named **WeatherCal-Reborn-Setup**, paste the code below, and run it (or download from [WeatherCal-Reborn-Setup.js](https://github.com/zmjlucas/WeatherCal-Reborn/releases/latest/download/WeatherCal-Reborn-Setup.js)).
+2. Create a new script named **WeatherCal-Reborn-Setup**, paste the code below, and run it. You can also download [WeatherCal-Reborn-Setup.js](https://github.com/zmjlucas/WeatherCal-Reborn/releases/latest/download/WeatherCal-Reborn-Setup.js).
 
 <!-- Generated from WeatherCal-Reborn-Setup.js. Edit that file, then run pnpm readme:sync. -->
 <!-- setup-script:begin -->
@@ -39,10 +39,14 @@ try {
 ```
 <!-- setup-script:end -->
 
-The installer downloads `WeatherCal-Reborn-vX.X.X.js` from the latest GitHub release, saves it as `WeatherCal-Reborn.js`, removes itself, and attempts to launch the widget script. If it does not launch, run **WeatherCal-Reborn** manually. If **WeatherCal-Reborn-Setup** remains in your script list, delete it after installation. Existing `WeatherCal-Reborn.js` files are never overwritten.
+> [!NOTE]
+> If the widget does not launch, run `WeatherCal-Reborn` manually.
+> Delete `WeatherCal-Reborn-Setup` if it remains in your script list after installation.
 
 3. Follow the first-run prompts: grant the requested permissions, choose a weather provider (or skip weather), enter its credentials, and choose a background.
 4. Add a Scriptable widget to your Home Screen, edit the widget, and select **WeatherCal-Reborn** as its script. Run the script again to change preferences or preview it.
+
+## Configuration
 
 For layout examples and more settings, see the [configuration guide](https://zmjlucas.github.io/WeatherCal-Reborn/guide/quick-start.html).
 
