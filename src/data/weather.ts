@@ -131,10 +131,16 @@ async function getWeatherApiPath(this: WeatherCalContext, newApiKey?: string): P
     // Existing users can still validate legacy subscriptions through 2.5.
     for (const path of [apiPath, 'https://api.openweathermap.org/data/2.5/onecall']) {
       apiPath = path;
-      try { response = parseWeatherResponse(await new Request(path + parameter + '&lat=37.332280&lon=-122.010980').loadJSON()); }
+      try {
+        const request = new Request(path + parameter + '&lat=37.332280&lon=-122.010980');
+        response = parseWeatherResponse(await request.loadJSON());
+        if (request.response?.statusCode !== 200 || response?.cod) { response = null; continue; }
+        // A parsed object alone does not prove the key can retrieve usable weather.
+        if (!finiteNumber(response?.current?.temp)) response = null;
+      }
       catch { response = null; }
-      if (!response?.cod) break;
+      break;
     }
-    if (response && !response.cod) this.writePreference('weather-cal-api-path', apiPath);
+    if (response) this.writePreference('weather-cal-api-path', apiPath);
     return newApiKey ? response : apiPath + parameter;
 }
