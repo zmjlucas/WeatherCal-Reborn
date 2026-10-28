@@ -60,6 +60,17 @@ export function parseQWeatherPart(kind: 'current' | 'hourly' | 'daily', value: u
       const min = temperature(source.temperatureMin, units);
       if (max === undefined || min === undefined) return null;
       const day: WeatherDay = { temp: { max, min }, weather: condition(record(source.daytime).condition) };
+      for (const [sourceField, field] of [['forecastStartTime', 'forecastStart'], ['forecastEndTime', 'forecastEnd']] as const) {
+        const time = source[sourceField];
+        // An explicit offset (including UTC) avoids interpreting missing zones on the device.
+        if (typeof time === 'string' && /T.*(?:Z|[+-]\d{2}:\d{2})$/i.test(time) && Number.isFinite(Date.parse(time))) day[field] = Date.parse(time) / 1000;
+      }
+      // daily requests use localTime=true. Only a local midnight establishes a calendar label;
+      // UTC-formatted non-midnight intervals remain usable for selection, not date guessing.
+      if (day.forecastStart !== undefined && typeof source.forecastStartTime === 'string') {
+        const localDate = source.forecastStartTime.match(/^(\d{4}-\d{2}-\d{2})T00:00(?::00(?:\.0+)?)?(?:Z|[+-]\d{2}:\d{2})$/i);
+        if (localDate) day.forecastDate = localDate[1]!;
+      }
       const astro = record(source.astro);
       for (const field of ['sunrise', 'sunset'] as const) {
         const time = astro[field];

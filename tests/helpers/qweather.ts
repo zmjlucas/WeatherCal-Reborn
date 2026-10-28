@@ -7,6 +7,7 @@ export function qweatherPayload(url: string): unknown {
   ] };
   if (url.includes('/daily/')) return { metadata, days: [0, 1].map(day => ({
     forecastStartTime: `2026-10-${26 + day}T00:00+08:00`,
+    forecastEndTime: `2026-10-${27 + day}T00:00+08:00`,
     temperatureMax: { value: 24, unit: '°C' }, temperatureMin: { value: 10, unit: '°C' },
     daytime: { condition: { code: '104', text: '阴' }, precipitation: { probability: 0.3 } },
     nighttime: { condition: { code: '305', text: '雨' }, precipitation: { probability: 0.6 } },

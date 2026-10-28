@@ -107,7 +107,9 @@ for (const [daytime, nighttime, expected] of [
   test(`QWeather renders independent period probabilities for ${String(daytime)}/${String(nighttime)}`, async t => {
     const { service, Stack } = await setup(t, { request: async url => {
       if (!url.includes('/daily/')) return payload(url);
-      return { days: [0, 1].map(() => ({
+      return { days: [0, 1].map(day => ({
+        forecastStartTime: `2026-10-${26 + day}T00:00+08:00`,
+        forecastEndTime: `2026-10-${27 + day}T00:00+08:00`,
         temperatureMax: { value: 24, unit: '°C' }, temperatureMin: { value: 10, unit: '°C' },
         daytime: { precipitation: { probability: daytime } },
         nighttime: { precipitation: { probability: nighttime } }
