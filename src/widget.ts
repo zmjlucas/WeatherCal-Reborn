@@ -99,7 +99,7 @@ export default {
         await custom.background(this.widget)
 
       } else if (background.type == "color") {
-        this.widget.backgroundColor = this.provideColor(background)
+        this.widget.backgroundColor = this.provideBackgroundColor(background)
 
       } else if (background.type == "auto") {
         const gradient = new LinearGradient()
@@ -111,8 +111,8 @@ export default {
 
       } else if (background.type == "gradient") {
         const gradient = new LinearGradient()
-        const initialColor = this.provideColor({ color: background.initialColor, dark: background.initialDark })
-        const finalColor = this.provideColor({ color: background.finalColor, dark: background.finalDark })
+        const initialColor = this.provideBackgroundColor({ color: background.initialColor, dark: background.initialDark })
+        const finalColor = this.provideBackgroundColor({ color: background.finalColor, dark: background.finalDark })
 
         gradient.colors = [initialColor, finalColor]
         gradient.locations = [0, 1]

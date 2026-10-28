@@ -70,6 +70,7 @@ export interface WeatherCalContext extends WidgetState {
   provideFont(fontName: string, fontSize: number): Font;
   provideText(text: unknown, stack: WidgetContainer, format?: Partial<FontFormat> | null, standardize?: boolean, url?: string): WidgetText;
   provideColor(format?: ColorFormat | null, alpha?: number): Color;
+  provideBackgroundColor(format: { color: string; dark?: string | undefined }): Color;
   provideBatteryIcon(batteryLevel: number, charging?: boolean): Image;
   provideConditionSymbol(condition: number, night: boolean): Image;
   drawVerticalLine(color: Color, height: number): Image;
