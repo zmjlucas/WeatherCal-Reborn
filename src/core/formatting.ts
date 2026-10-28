@@ -107,6 +107,11 @@ export default {
       return textItem
     },
 
+  provideBackgroundColor(this: WeatherCalContext, format: { color: string; dark?: string | undefined }): Color {
+      // Backgrounds inherit their own light color; text and icons inherit defaultText.
+      return this.provideColor({ color: format.color, dark: format.dark || format.color })
+    },
+
   provideColor(this: WeatherCalContext, format?: ColorFormat | null, alpha?: number): Color {
       const defaultText = this.format.defaultText
       const lightColor = (format && format.color && format.color.length) ? format.color : defaultText.color
