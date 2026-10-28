@@ -16,7 +16,8 @@ export function intrinsic(node: PresentationNode): ContentSize {
   if (node.kind === 'space') return { min: node.length, preferred: node.length };
   if (node.kind === 'text') {
     const preferred = textWidth(node.text, node.fontSize) + 2;
-    const min = node.lineLimit === 1 ? preferred : Math.min(preferred, node.fontSize * 1.1 + 2);
+    // Native single-line text truncates within its frame; its full text width is a preference.
+    const min = Math.min(preferred, node.fontSize * 1.1 + 2);
     return { min, preferred };
   }
   if (node.kind === 'image') {
