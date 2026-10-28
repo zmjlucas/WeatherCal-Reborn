@@ -1,0 +1,47 @@
+name: Sync main back to dev
+
+on:
+  workflow_run:
+    workflows: [Check and build Scriptable scripts]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: sync-main-to-dev
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.conclusion == 'success'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      # Privileged job: load code only from protected main, never from dev or a PR.
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/github-script@v9
+        with:
+          script: |
+            const sync = require('./scripts/sync-main-to-dev.cjs');
+            try {
+              const result = await sync({ github, context });
+              core.notice(result.message);
+              await core.summary.addHeading('Main to dev synchronization')
+                .addRaw(result.message).write();
+            } catch (error) {
+              core.setFailed(error.message);
+              await core.summary.addHeading('Manual action needed')
+                .addRaw(error.message).write();
+            }
