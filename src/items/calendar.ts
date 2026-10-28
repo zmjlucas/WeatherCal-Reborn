@@ -56,7 +56,7 @@ export default {
     currentStack = makeEventStack(currentDiff,this.now)
 
     for (const event of events) {
-      const diff = this.dateDiff(this.now, event.startDate)
+      const diff = Math.max(0, this.dateDiff(this.now, event.startDate))
 
       if (diff != currentDiff) {
         currentDiff = diff

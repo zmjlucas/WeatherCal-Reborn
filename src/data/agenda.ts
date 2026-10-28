@@ -33,13 +33,14 @@ export default {
       this.data.events = events.filter((event, index, array) => {
         if (!(index == array.findIndex(t => t.identifier == event.identifier && t.startDate.getTime() == event.startDate.getTime()))) { return false }
 
-        const diff = this.dateDiff(this.now, event.startDate)
-        if (diff < 0 || diff > numberOfDays) { return false }
+        // Carry-over events belong to today while their display interval remains active.
+        const diff = Math.max(0, this.dateDiff(this.now, event.startDate))
+        if (diff > numberOfDays) { return false }
         if (diff > 0 && this.now.getHours() < showFutureAt) { return false }
 
         if (calendars.length && !(calendars.some(a => typeof a !== "string" && a.identifier == event.calendar.identifier) || calendars.includes(event.calendar.title))) { return false }
         if (event.title.startsWith("Canceled:")) { return false }
-        if (event.isAllDay) { return eventSettings.showAllDay }
+        if (event.isAllDay) { return eventSettings.showAllDay && event.endDate.getTime() > this.now.getTime() }
 
         // If they leave it blank, set minutes after to the duration of the event
         const minutesAfter = parseInt(String(eventSettings.minutesAfter)) >= 0 ? parseInt(String(eventSettings.minutesAfter)) * 60000 : event.endDate.getTime() - event.startDate.getTime()
