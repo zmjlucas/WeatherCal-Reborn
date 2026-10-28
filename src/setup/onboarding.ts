@@ -45,13 +45,14 @@ export default {
       const returnVal = await this.promptForText("Paste your API key in the box below.",[""],["82c29fdbgd6aebbb595d402f8a65fabf"])
       const apiKey = returnVal.textFieldValue(0).trim()
       if (!apiKey) { await this.generateAlert("No API key was entered. Try copying the key again and re-running this script.",["Exit"]); return false }
-      this.writePreference("weather-cal-api-key", apiKey)
-
       let apiResponse
       try { apiResponse = await this.getWeatherApiPath(apiKey) } catch {}
       if (apiResponse && typeof apiResponse !== 'string' && apiResponse.current) {
+        this.writePreference("weather-cal-api-key", apiKey)
         await this.generateAlert("The API key worked and was saved.",[firstRun ? "Continue" : "OK"])
       } else if (firstRun) {
+        // First setup deliberately permits keys that are still awaiting activation.
+        this.writePreference("weather-cal-api-key", apiKey)
         await this.generateAlert("New OpenWeather API keys may take a few hours to activate. Your widget will start displaying weather information once it's active.",["Continue"])
       } else {
         await this.generateAlert("The key could not be verified. Check your connection and OpenWeather subscription. New keys may take a few hours to activate.")
