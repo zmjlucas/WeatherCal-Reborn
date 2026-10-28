@@ -19,6 +19,7 @@ export async function loadQWeather(context: WeatherCalContext, latitude: number,
       const units = resolveWeatherUnits(context.settings.widget.units);
       const point = latitude.toFixed(2) + '/' + longitude.toFixed(2);
       // Schema 2 retains daytime/nighttime probabilities discarded by older caches.
+      // Daily interval fields are additive: keep legacy current/hourly fallback data.
       const identity = JSON.stringify(['qweather-v1', state.cacheScope, point, locale, units, 2]);
       const path = context.getDataCachePath('qweather-cache', identity);
       if (context.fm.fileExists(path) && context.fm.isFileStoredIniCloud(path)) await context.fm.downloadFileFromiCloud(path);
@@ -30,7 +31,7 @@ export async function loadQWeather(context: WeatherCalContext, latitude: number,
         const result: WeatherResponse = {};
         const attributions = new Set<string>();
         for (const kind of ['current', 'hourly', 'daily'] as const) {
-          const count = kind === 'hourly' ? '&hours=24' : kind === 'daily' ? '&days=8' : '';
+          const count = kind === 'hourly' ? '&hours=24' : kind === 'daily' ? '&days=8&localTime=true' : '';
           const raw = await request('/weather/v1/' + kind + '/' + point + '?lang=' + encodeURIComponent(locale) + count);
           const parsed = parseQWeatherPart(kind, raw, units);
           if (!parsed) throw new Error('QWeather response unavailable');

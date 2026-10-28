@@ -6,6 +6,11 @@ export interface WeatherCondition { id?: number; main?: string; description?: st
 export interface WeatherCurrent { temp?: number; weather?: WeatherCondition[] }
 export interface WeatherHour extends WeatherCurrent { dt?: number; pop?: number }
 export interface WeatherDay {
+  /** QWeather location-day interval in Unix seconds, independent of device timezone. */
+  forecastStart?: number;
+  forecastEnd?: number;
+  /** Provider-local calendar date for labels; never inferred from device timezone. */
+  forecastDate?: string;
   temp?: { max?: number; min?: number };
   weather?: WeatherCondition[];
   sunrise?: number;
@@ -16,7 +21,11 @@ export interface WeatherDay {
   nighttimePop?: number;
 }
 export interface WeatherResponse { attributions?: string[]; current?: WeatherCurrent; daily?: WeatherDay[]; hourly?: WeatherHour[]; cod?: number | string; message?: string }
-export interface ForecastDay { High: number | null; Low: number | null; Condition: number }
+export interface ForecastDay {
+  High: number | null; Low: number | null; Condition: number;
+  /** Undefined preserves legacy/custom labels; null means the provider date is unknown. */
+  date?: string | null;
+}
 export interface ForecastHour { Temp: number | null; Condition: number }
 export interface WeatherData {
   currentTemp: number | null;
@@ -78,6 +87,9 @@ export function parseWeatherResponse(value: unknown): WeatherResponse | null {
   if (Array.isArray(value.daily)) response.daily = value.daily.map((candidate: unknown) => {
     const source = record(candidate);
     const day: WeatherDay = {};
+    if (finiteNumber(source.forecastStart)) day.forecastStart = source.forecastStart;
+    if (finiteNumber(source.forecastEnd)) day.forecastEnd = source.forecastEnd;
+    if (typeof source.forecastDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(source.forecastDate)) day.forecastDate = source.forecastDate;
     if (isRecord(source.temp)) {
       day.temp = {};
       if (finiteNumber(source.temp.max)) day.temp.max = source.temp.max;

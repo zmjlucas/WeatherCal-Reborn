@@ -43,6 +43,14 @@ export default {
 
     for (let i=startIndex; i < endIndex; i++) {
       if (!hourly) { myDate.setDate(myDate.getDate() + 1) }
+      const providerDate = hourly ? undefined : weatherData.forecast[i - 1]?.date
+      let labelDate = myDate
+      if (providerDate) {
+        const [year, month, day] = providerDate.split('-').map(Number)
+        // Format the provider calendar date in the user's locale without changing its day.
+        labelDate = new Date(year!, month! - 1, day!, 12)
+      }
+      const dateLabel = providerDate === null ? '--' : this.formatDate(labelDate,dateFormat)
 
       const unitStack = weatherStack.addStack()
       const dateStack = unitStack.addStack()
@@ -54,7 +62,7 @@ export default {
         unitStack.layoutVertically()
 
         dateStack.addSpacer()
-        this.provideText(this.formatDate(myDate,dateFormat), dateStack, this.format.smallTemp)
+        this.provideText(dateLabel, dateStack, this.format.smallTemp)
         dateStack.addSpacer()
 
       } else {
@@ -65,7 +73,7 @@ export default {
         dateStack.setPadding(0, 0, 0, 0)
         dateStack.size = stackSize
 
-        const dateText = this.provideText(this.formatDate(myDate,dateFormat), dateStack, this.format.smallTemp)
+        const dateText = this.provideText(dateLabel, dateStack, this.format.smallTemp)
         dateText.lineLimit = 1
         dateText.minimumScaleFactor = 0.5
         dateStack.addSpacer()

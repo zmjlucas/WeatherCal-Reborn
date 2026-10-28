@@ -1,6 +1,7 @@
 import { loadQWeather } from './qweather';
 import { qweatherLocale } from './qweather-locale';
 import { resolveWeatherUnits } from './weather-units';
+import { weatherDays } from './weather-days';
 import type { WeatherCalContext } from '../types/context';
 import { parseWeatherResponse } from '../types/data';
 import type { WeatherResponse, WeatherHour } from '../types/data';
@@ -59,7 +60,7 @@ export default {
 
   async setupSunrise(this: WeatherCalContext): Promise<void> {
     const { response } = await this.loadWeatherData(60, 1440);
-    const daily = response?.daily || [];
+    const daily = weatherDays(response, this.now, this.settings.weather.provider);
     this.data.sun = {
       sunrise: finiteNumber(daily[0]?.sunrise) ? daily[0].sunrise * 1000 : null,
       sunset: finiteNumber(daily[0]?.sunset) ? daily[0].sunset * 1000 : null,
@@ -70,7 +71,7 @@ export default {
   async setupWeather(this: WeatherCalContext): Promise<void> {
     const { locale, response } = await this.loadWeatherData(1, 60);
     const current = response?.current;
-    const daily = response?.daily || [];
+    const daily = weatherDays(response, this.now, this.settings.weather.provider);
     const suppliedHours = response?.hourly || [];
     const hourStart = Math.floor(this.now.getTime() / 3600000) * 3600;
     // QWeather starts at the next available forecast hour. Re-align cached data
@@ -100,7 +101,8 @@ export default {
       this.data.weather.forecast.push({
         High: daily[index]?.temp?.max ?? null,
         Low: daily[index]?.temp?.min ?? null,
-        Condition: daily[index]?.weather?.[0]?.id ?? 100
+        Condition: daily[index]?.weather?.[0]?.id ?? 100,
+        ...(this.settings.weather.provider === 'openweather' ? {} : { date: daily[index]?.forecastDate ?? null })
       });
       this.data.weather.hourly.push({
         Temp: hourly[index]?.temp ?? null,
