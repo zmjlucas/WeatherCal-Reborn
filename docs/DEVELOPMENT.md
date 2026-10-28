@@ -9,7 +9,7 @@ pnpm install --frozen-lockfile
 pnpm check
 ```
 
-`check` runs `typecheck → test → build → validate:bundle`. Scriptable business
+`check` runs `readme:check → test:automation → typecheck → test → build → validate:bundle`. Scriptable business
 code is checked with only ES2020 and Scriptable types; Node tools and tests
 have a separate configuration. `pnpm test:watch` runs the interactive tests.
 Type checking generates ignored `.typecheck/` API declarations directly from
@@ -182,6 +182,11 @@ Use [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/)
 Keep each commit focused on one responsibility and include its relevant tests. Use `feat` for new behavior, `fix` for corrections, `refactor` for behavior-preserving changes, `build` for build tooling, `ci` for workflows, and `docs` for documentation. Keep unrelated changes separate and fold review fixes into their owning commits before merging. Mark breaking API changes with `!` or a `BREAKING CHANGE:` footer.
 
 ## Releases
+
+After merging a release or hotfix into `main`, follow the
+[main-to-dev synchronization SOP](BRANCH-SYNC.md). Actions fast-forwards `dev`
+after successful `main` CI when possible; divergent histories require a local
+merge and checks. Normal development can still be pushed directly to `dev`.
 
 Keep `package.json` on Semantic Versioning. Move the Unreleased changelog entries to the release version/date before publication. CI checks changes and uploads the built scripts as an artifact. When a maintainer publishes a release tagged `v<package.json version>`, a separate job attaches only `WeatherCal-Reborn-v<version>.js`, a byte-identical copy of the built `one.js`. Together with GitHub's automatic Source code (zip) and Source code (tar.gz), the release has three downloadable files. Do not upload `one.js`, `weather-cal-converter.js`, or `SHA256SUMS` as release assets. Normal builds and CI artifacts retain their original filenames and checksum manifest. No release is created automatically by a commit, and no release was published as part of this refactor.
 
