@@ -1,5 +1,6 @@
 import type { WeatherCalContext } from '../types/context';
-import { getQWeatherHost, saveQWeatherCredentials } from '../data/qweather-state';
+import { getQWeatherHost } from '../data/qweather-state';
+import { verifyAndSaveQWeatherCredentials } from './qweather-credentials';
 import { record } from '../types/json';
 
 export default {
@@ -14,17 +15,15 @@ export default {
     if (provider === 'qweather') {
       const prompt = new Alert();
       prompt.title = 'QWeather credentials';
-      prompt.message = 'Find API Host in QWeather Console → Settings. Leave key blank to keep a key already saved for this host.';
+      prompt.message = 'Find API Host in QWeather Console → Settings. Leave key blank to keep a key already saved for this host. Verification makes one weather request before saving.';
       prompt.addSecureTextField('your-host.qweatherapi.com', host);
       prompt.addSecureTextField('API key', '');
-      prompt.addAction('Save');
+      prompt.addAction('Verify and save');
       prompt.addAction('Cancel');
       if (await prompt.presentAlert() !== 0) return false;
-      const error = saveQWeatherCredentials(this.name, prompt.textFieldValue(0), prompt.textFieldValue(1));
+      const error = await verifyAndSaveQWeatherCredentials(this.name, prompt.textFieldValue(0), prompt.textFieldValue(1));
       if (error) {
-        await this.generateAlert(error === 'host'
-          ? 'Enter the dedicated qweatherapi.com API Host from your QWeather console.'
-          : 'Enter a valid QWeather API key.');
+        await this.generateAlert('QWeather verification failed', ['OK'], error);
         return false;
       }
     } else if (!(await this.getWeatherKey(firstRun))) return false;
@@ -43,7 +42,7 @@ export default {
     delete this.data.rain;
     delete this.data.weatherAttributions;
     delete this.data.weatherError;
-    if (provider === 'qweather') await this.generateAlert('QWeather settings saved. Weather will load when you preview the widget.', [firstRun ? 'Continue' : 'OK']);
+    if (provider === 'qweather') await this.generateAlert('QWeather credentials verified', [firstRun ? 'Continue' : 'OK'], 'Settings saved. Weather will load when you preview the widget.');
     return true;
   }
 };

@@ -210,7 +210,13 @@ For QWeather, enter your dedicated API Host from QWeather Console → Settings a
 your API Key. A bare hostname or an HTTPS origin is accepted; paths, HTTP, ports
 and other domains are rejected. Both the host and key are stored in [Scriptable Keychain](https://docs.scriptable.app/keychain/).
 The host is associated with the widget name; keys are shared by host and sent only
-in `X-QW-Api-Key`. Saving settings makes no test requests. Neither credential is
+in `X-QW-Api-Key`. **Verify and save** makes one current-weather request for a fixed
+test location, without asking for location permission. Credentials and the provider
+selection are saved only after a successful, usable response, followed by a
+verification-success popup. A failed check shows an error popup and keeps the
+previous configuration. Blank key input verifies the key already saved for the
+entered host. This check uses one API request, requires a connection and does not
+verify access to hourly, daily or minutely products. Neither credential is
 exported or saved in preference/cache files. Cache identities use a random
 [UUID](https://docs.scriptable.app/uuid/) whose host mapping stays in Keychain.
 Imported or renamed widgets must configure their host and key. The existing shared
@@ -229,8 +235,13 @@ statements are retained in the data but are not rendered as a weather footer.
 
 The QWeather host-state module, `src/data/qweather-state.ts`, owns credential
 validation and persistence, the opaque cache namespace, same-host serialization,
-cooldown, backoff and authenticated request pacing. Setup uses
-`saveQWeatherCredentials`; it does not know credential names or cooldown paths.
+cooldown, backoff and authenticated request pacing. Setup verification lives in
+`src/setup/qweather-credentials.ts`: it uses `resolveQWeatherCredentials` to check
+input without writing, then calls `saveQWeatherCredentials` only after verification.
+The explicit probe bypasses weather caches and runtime cooldown, uses a 15-second
+timeout and rejects redirects. It does not alter caches or cooldown on failure;
+a verified unchanged key preserves cooldown, while a verified changed key clears it.
+Setup does not know credential names or cooldown paths.
 The provider loader in `src/data/qweather.ts` selects the weather cache, builds
 endpoint paths and interprets responses. Its cache recheck runs inside
 `withQWeatherState`, before `refresh` checks credentials or cooldown, so fresh

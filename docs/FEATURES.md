@@ -14,7 +14,7 @@ Upstream reference: the project linked in the [README credits](../README.md#cred
 | Text/enum/bool/font/multi-value/multi-select editing; localization; default merging | `src/preferences/` | preference tests |
 | Date sizes, greetings, events, reminders, calendar/list colors, empty-state behavior, deep links | `src/items/calendar.ts`, `basic.ts`, `src/data/agenda.ts` | item and data tests |
 | Current/future weather, daily/hourly forecasts, rain, high/low bar, sunrise/sunset | `src/items/weather.ts`, `forecast.ts`, `sun.ts`, `src/data/weather.ts` | item/data/core tests |
-| QWeather default, provider switching, secure QWeather keys, rate cooldown | `src/data/qweather.ts`, `qweather-response.ts`, `src/setup/weather-provider.ts` | QWeather and provider setup tests |
+| QWeather default, provider switching, verified secure QWeather keys, result alerts, rate cooldown | `src/data/qweather.ts`, `qweather-response.ts`, `src/setup/weather-provider.ts`, `qweather-credentials.ts` | QWeather and provider setup tests |
 | Near-term QWeather summary with source link and bounded forecast validity | `src/data/rain.ts`, `rain-response.ts`, `src/items/rain.ts` | rain data and item tests |
 | Battery level/charging, ISO week, text and SF Symbols | `src/items/basic.ts`, `src/core/drawing.ts` | item/core tests |
 | Location/reverse geocoding, locale/units, API versions, bounded cache fallback | `src/data/`, `src/core/storage.ts` | data/core tests |

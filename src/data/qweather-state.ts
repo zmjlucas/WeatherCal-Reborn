@@ -31,15 +31,25 @@ function qweatherCacheScope(host: string): string {
   return Keychain.get(name);
 }
 
-/** Validate before writing. Blank input retains the entered host's key; only
- * a changed key clears that host's cooldown, never its weather cache namespace. */
-export function saveQWeatherCredentials(widgetName: string, hostInput: string, keyInput: string): 'host' | 'key' | null {
+/** Resolve submitted credentials without changing stored configuration. */
+export function resolveQWeatherCredentials(hostInput: string, keyInput: string): { host: string; key: string } | 'host' | 'key' {
   const host = normalizeQWeatherHost(hostInput);
   if (!host) return 'host';
   const keyName = 'weather-cal-qweather-key:' + host;
   const previous = Keychain.contains(keyName) ? Keychain.get(keyName) : '';
   const key = keyInput.trim() || previous;
   if (!key || /[\r\n]/.test(key)) return 'key';
+  return { host, key };
+}
+
+/** Validate before writing. Blank input retains the entered host's key; only
+ * a changed key clears that host's cooldown, never its weather cache namespace. */
+export function saveQWeatherCredentials(widgetName: string, hostInput: string, keyInput: string): 'host' | 'key' | null {
+  const credentials = resolveQWeatherCredentials(hostInput, keyInput);
+  if (typeof credentials === 'string') return credentials;
+  const { host, key } = credentials;
+  const keyName = 'weather-cal-qweather-key:' + host;
+  const previous = Keychain.contains(keyName) ? Keychain.get(keyName) : '';
   Keychain.set(keyName, key);
   Keychain.set('weather-cal-qweather-host:' + widgetName, host);
   if (key !== previous) {

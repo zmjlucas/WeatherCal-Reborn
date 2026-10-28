@@ -57,7 +57,7 @@ export function asTable(table: TestTable): UITable { return table as unknown as 
 export interface EnvironmentOptions {
   responses?: Array<number | AlertResponse>; iCloud?: boolean; dark?: boolean; name?: string;
   table?: (table: TestTable) => void | Promise<void>;
-  request?: (url: string, kind: 'json' | 'string', request: { headers: Record<string, string>; response: { statusCode: number; headers: Record<string, string> } }) => unknown | Promise<unknown>;
+  request?: (url: string, kind: 'json' | 'string', request: { headers: Record<string, string>; response: { statusCode: number; headers: Record<string, string> }; onRedirect?: (request: unknown) => unknown }) => unknown | Promise<unknown>;
 }
 export function createEnvironment(options: EnvironmentOptions = {}) {
   const localStore = new Map<string, StoredFile>(); const cloudStore = new Map<string, StoredFile>();
@@ -134,6 +134,7 @@ export function createEnvironment(options: EnvironmentOptions = {}) {
   class Request {
     headers: Record<string, string> = {};
     response = { statusCode: 200, headers: {} as Record<string, string> };
+    onRedirect?: (request: unknown) => unknown;
     constructor(public url: string) { requests.push(url); }
     async loadJSON() { if (!options.request) throw Error('Offline'); return options.request(this.url, 'json', this); }
     async loadString() { if (!options.request) throw Error('Offline'); return options.request(this.url, 'string', this); }

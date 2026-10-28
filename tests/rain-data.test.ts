@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { rainContext, rainPayload, rainNow, rainHost } from './helpers/rain';
 import { initializedContext } from './helpers/context';
 import { required } from './helpers/scriptable';
+import { qweatherPayload } from './helpers/qweather';
 
 test('rain requests longitude first with header auth and reuses its cache across contexts', async t => {
   const { service, requests, local } = await rainContext(t, { request: async (url, _kind, req) => {
@@ -217,15 +218,16 @@ test('OpenWeather, missing credentials and invalid coordinates make no minutely 
 test('saving a changed key clears minutely cooldown while re-saving the same key retains it', async t => {
   const { service, requests } = await rainContext(t, {
     responses: [0, { fields: [rainHost, 'fake-rain-key'] }, 0, 0, { fields: [rainHost, 'corrected-key'] }, 0],
-    request: async (_url, _kind, req) => req.headers['X-QW-Api-Key'] === 'corrected-key' ? rainPayload() : { code: '403' }
+    request: async (url, _kind, req) => url.includes('/current/') ? qweatherPayload(url)
+      : req.headers['X-QW-Api-Key'] === 'corrected-key' ? rainPayload() : { code: '403' }
   });
   await service.setupRain();
   assert.equal(await service.selectWeatherProvider(), true);
   await service.setupRain();
-  assert.equal(requests.length, 1);
+  assert.equal(requests.length, 2);
   assert.equal(await service.selectWeatherProvider(), true);
   assert.equal('rain' in service.data, false);
   await service.setupRain();
-  assert.equal(requests.length, 2);
+  assert.equal(requests.length, 4);
   assert.equal(service.data.rain?.outlook?.state, 'starts');
 });
